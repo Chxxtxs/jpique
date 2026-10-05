@@ -773,6 +773,8 @@ function vHoy() {
       <button class="row card" style="justify-content:space-between;border:1px solid var(--line);border-radius:var(--r)" data-go="especies"><span><strong>¿Qué pesqué?</strong><br><span class="small muted">Busca por nombre o mira las fotos</span></span><span style="color:var(--accent)">→</span></button>
     </section>
 
+    ${ruletaCard()}
+
     ${licCard(spot, hoyDate)}
 
     ${anuncioHTML()}
@@ -1520,6 +1522,102 @@ async function restaurarCopia(file) {
   } catch (e) { avisoCap("Ese archivo no es una copia de jPique. Elige el .zip que descargaste desde esta pantalla.", "bad"); }
 }
 
+/* ---------- Ruleta: ¿salgo a pescar? (15 % de probabilidad, intentos infinitos) ---------- */
+const RUL_PROB = 0.15, RUL_N = 20, RUL_GANAN = [1, 8, 15]; // 3 de 20 casillas = 15 %
+const RUL = { n: 0, rot: 0, girando: false, victorias: 0 };
+const RUL_NO = [
+  "Ella dice que no. Respira, y gira otra vez.",
+  "«Primero la loza, después el mar.» Otra vuelta.",
+  "Hoy toca supermercado. La ruleta te entiende, pero no te suelta: gira de nuevo.",
+  "No salió. Tus carretes siguen esperando, la ruleta también.",
+  "Casi. Dicen que la insistencia es una virtud de pescador.",
+  "El pez no se va a ningún lado. Tú tampoco: otra vuelta.",
+  "Negociación en curso… ofrece lavar los platos y gira otra vez.",
+  "Hoy no toca, campeón. Pero la ruleta no cobra: intentos infinitos.",
+  "Esta vez la suerte miró para otro lado. Gira de nuevo.",
+  "Un «no» más y la próxima sale. Eso dice la estadística (más o menos).",
+];
+const RUL_SI = "¡Vamos campeón! Sale a pescar, nadie te para hoy.";
+function azar() { try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; } catch (e) { return Math.random(); } }
+
+// Cuántos peces pide la ruleta según las condiciones de hoy (actividad, estado del mar, mareas vivas)
+function ruletaCondiciones() {
+  const spot = SPOTS.find(s => s.id === st.spot), D = datos(spot), now = nowCL();
+  const di = st.dia, esH = di === idxHoy(D, now), hora = st.hora ?? (esH ? now.h : 9), idx = di * 24 + hora;
+  const A = actividad(spot, D, di), top = [...A.horas].sort((a, b) => b - a).slice(0, 4).reduce((a, b) => a + b, 0) / 400;
+  const em = estadoMar(D.m ? D.m.wave_height[idx] : null, D.w.wind[idx]), cf = D.m ? coefMarea(D, di) : null;
+  const factor = { ok: 1, warn: 0.7, bad: 0.4 }[em.k] || 0.7, tope = esMar(spot) ? 10 : 5;
+  let max = Math.round(2 + 8 * Math.min(1, top * 1.3) * factor) + (cf && cf.c >= 90 ? 1 : 0);
+  max = Math.max(1, Math.min(tope, max));
+  return { spot, A, em, cf, max, tope, hora: String(hora).padStart(2, "0") + ":00" };
+}
+function ruletaSVG() {
+  const R = 100, c = 110, paso = 360 / RUL_N, pt = (a, r) => [c + r * Math.sin(a * RAD), c - r * Math.cos(a * RAD)];
+  const gajos = [...Array(RUL_N)].map((_, i) => {
+    const a0 = i * paso, a1 = (i + 1) * paso, [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R), gana = RUL_GANAN.includes(i);
+    const fill = gana ? "var(--ok)" : i % 2 ? "var(--sea-soft)" : "var(--line)", [tx, ty] = pt(a0 + paso / 2, R * 0.78);
+    return `<path d="M${c} ${c} L${x0.toFixed(2)} ${y0.toFixed(2)} A${R} ${R} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)}Z" fill="${fill}" stroke="var(--surface)" stroke-width="1.5"/>
+      ${gana ? `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="700" fill="#fff" font-family="var(--font-display)" transform="rotate(${a0 + paso / 2} ${tx.toFixed(1)} ${ty.toFixed(1)})">SÍ</text>`
+        : `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="var(--muted)" font-family="var(--font-body)" transform="rotate(${a0 + paso / 2} ${tx.toFixed(1)} ${ty.toFixed(1)})">no</text>`}`;
+  }).join("");
+  return `<div style="position:relative;width:min(100%,300px);margin:0 auto;aspect-ratio:1">
+    <svg id="rul-rueda" viewBox="0 0 220 220" role="img" aria-label="Ruleta con 3 casillas de 20 para salir a pescar" style="width:100%;height:100%;display:block;transform:rotate(${RUL.rot}deg);transform-origin:50% 50%">
+      <circle cx="${c}" cy="${c}" r="${R + 6}" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/>${gajos}<circle cx="${c}" cy="${c}" r="14" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/></svg>
+    <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))"><path d="M12 22 4 4h16z" fill="var(--accent)" stroke="var(--bg)" stroke-width="1.5" stroke-linejoin="round"/></svg>
+  </div>`;
+}
+function ruletaCard() {
+  return `<button type="button" class="row card" data-ruleta style="border:1px solid var(--line);border-radius:var(--r);gap:14px">
+    <span class="dot-big warn" style="width:40px;height:40px;background:var(--accent-soft);color:var(--accent)">${svgI('<circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4M12 12 5.5 16"/>', 20)}</span>
+    <span class="txt"><strong>La ruleta: ¿salgo a pescar?</strong><span style="white-space:normal">Gira y que decida la suerte. Intentos infinitos.</span></span><span style="color:var(--accent)">→</span></button>`;
+}
+function abrirRuleta() {
+  mostrarSheet(`${btnVolver("data-close", "Volver")}
+    <div class="stack" style="gap:6px"><span class="label">Juego</span><h1 style="font-size:28px">¿Salgo a pescar?</h1>
+      <p class="muted small">Gira la ruleta. Tiene un 15 % de probabilidad de ganar (3 casillas de 20) y puedes girar todas las veces que quieras.</p></div>
+    ${ruletaSVG()}
+    <button type="button" class="back" data-girar id="rul-btn" ${BTN_FUERTE}>Girar la ruleta</button>
+    <p class="small muted" style="text-align:center" id="rul-cont"></p>
+    <div id="rul-res" aria-live="polite"></div>`);
+  actualizarRuletaCont();
+}
+function actualizarRuletaCont() {
+  const el = $("#rul-cont"); if (!el) return;
+  el.textContent = RUL.n ? `Intentos: ${RUL.n} · Veces que te dejaron salir: ${RUL.victorias}` : "Todavía no has girado.";
+}
+function girarRuleta() {
+  if (RUL.girando) return; RUL.girando = true;
+  const gana = azar() < RUL_PROB, pool = [...Array(RUL_N).keys()].filter(i => RUL_GANAN.includes(i) === gana);
+  const i = pool[Math.floor(azar() * pool.length)], paso = 360 / RUL_N;
+  const objetivo = -(i * paso + paso / 2 + (azar() - 0.5) * paso * 0.6), delta = (((objetivo - RUL.rot) % 360) + 360) % 360;
+  const reducido = matchMedia("(prefers-reduced-motion: reduce)").matches, ms = reducido ? 500 : 4200;
+  RUL.rot += 360 * (reducido ? 1 : 5 + Math.floor(azar() * 3)) + delta; RUL.n++;
+  const rueda = $("#rul-rueda"), btn = $("#rul-btn"), res = $("#rul-res");
+  if (res) res.innerHTML = ""; if (btn) { btn.disabled = true; btn.textContent = "Girando…"; }
+  if (rueda) { rueda.style.transition = `transform ${ms}ms cubic-bezier(.12,.6,.1,1)`; rueda.style.transform = `rotate(${RUL.rot}deg)`; }
+  setTimeout(() => {
+    RUL.girando = false; if (gana) RUL.victorias++;
+    const b = $("#rul-btn"), r = $("#rul-res"); if (!b || !r) return;
+    b.disabled = false; b.textContent = "Girar otra vez"; actualizarRuletaCont();
+    r.innerHTML = gana ? ruletaGano() : `<div class="callout warn"><strong>No esta vez.</strong><br>${H(RUL_NO[Math.floor(azar() * RUL_NO.length)])}</div>`;
+    if (gana) { try { navigator.vibrate && navigator.vibrate([80, 60, 160]); } catch (e) {} }
+  }, ms + 80);
+}
+function ruletaGano() {
+  const C = ruletaCondiciones(), peces = 1 + Math.floor(azar() * C.max), seguro = C.em.k !== "bad";
+  return `<div class="stack" style="gap:12px">
+    <div class="callout" style="background:var(--ok-soft);color:var(--ok);font-size:17px;font-weight:600;text-wrap:balance">${RUL_SI}</div>
+    <div class="card stack" style="align-items:center;text-align:center;gap:4px">
+      <span class="label">Hoy la casa te espera con</span>
+      <b class="num" style="font-size:56px;font-weight:500;line-height:1">${peces}</b>
+      <strong>${peces === 1 ? "pez" : "peces"} para la mesa</strong>
+      <span class="small muted" style="margin-top:6px">El número sale al azar entre 1 y ${C.max}, según lo de hoy en ${H(C.spot.nombre)}: actividad de peces <b>${H(C.A.nivel.txt.toLowerCase())}</b>, mar <b>${H(C.em.txt.toLowerCase())}</b>${C.cf && C.cf.c >= 90 ? ", mareas vivas" : ""} (a las ${C.hora}).</span>
+    </div>
+    ${seguro ? "" : `<div class="callout bad small"><strong>Ojo con el mar.</strong> La ruleta dijo que sí, pero hoy el mar está para quedarse en tierra. Pesca solo desde un lugar seguro y alejado de las olas.</div>`}
+    <p class="small muted">Es un juego: la cantidad no es una obligación. Respeta siempre la talla mínima, la cuota por jornada y las vedas, y devuelve vivo lo que no corresponda llevarse (${esMar(C.spot) ? "en el mar el total no puede pasar de 10 ejemplares" : "revisa la cuota de cada especie"}).</p>
+  </div>`;
+}
+
 /* ---------- Render y eventos ---------- */
 function render() {
   const v = { hoy: vHoy, mareas: vMareas, especies: vEspecies, capturas: vCapturas, normas: vNormas, fuentes: vFuentes }[st.tab];
@@ -1537,8 +1635,10 @@ function initSpots() {
   $("#spot").value = st.spot;
 }
 document.addEventListener("click", (ev) => {
-  const t = ev.target.closest("[data-tab],[data-go],[data-sp],[data-dia],[data-hora],[data-medio],[data-close],[data-car],[data-lic],[data-lic-save],[data-lic-del],[data-lic-del-ok],[data-lic-del-no],[data-cap-new],[data-cap],[data-cap-share],[data-cap-dl],[data-cap-del],[data-cap-del-ok],[data-cap-backup],[data-foto-quitar],[data-instalar],[data-carp-new],[data-carp],[data-carp-save],[data-carp-edit],[data-carp-del],[data-carp-del-todo],[data-carp-del-solo],[data-carp-share],[data-carp-dl],[data-foto],[data-foto-share],[data-foto-dl],[data-foto-del],[data-foto-del-ok],[data-actualizar],[data-buscar-act]"); if (!t) return;
+  const t = ev.target.closest("[data-tab],[data-go],[data-sp],[data-dia],[data-hora],[data-medio],[data-close],[data-car],[data-lic],[data-lic-save],[data-lic-del],[data-lic-del-ok],[data-lic-del-no],[data-cap-new],[data-cap],[data-cap-share],[data-cap-dl],[data-cap-del],[data-cap-del-ok],[data-cap-backup],[data-foto-quitar],[data-instalar],[data-carp-new],[data-carp],[data-carp-save],[data-carp-edit],[data-carp-del],[data-carp-del-todo],[data-carp-del-solo],[data-carp-share],[data-carp-dl],[data-foto],[data-foto-share],[data-foto-dl],[data-foto-del],[data-foto-del-ok],[data-actualizar],[data-buscar-act],[data-ruleta],[data-girar]"); if (!t) return;
   const d = t.dataset;
+  if (d.ruleta !== undefined) return abrirRuleta();
+  if (d.girar !== undefined) return girarRuleta();
   if (d.instalar !== undefined) return instalar();
   if (d.actualizar !== undefined) return actualizarApp();
   if (d.buscarAct !== undefined) return buscarActualizacion(true);
@@ -1610,7 +1710,7 @@ const h0 = (location.hash || "").slice(1); if (TABS.some(t => t[0] === h0) || h0
 { const sp = SPOTS.find(s => s.id === st.spot); st.medio = esMar(sp) ? "mar" : "dulce"; }
 { const sp = SPOTS.find(s => s.id === st.spot); st.dia = idxHoy(datos(sp), nowCL()) ?? 0; }
 /* ---------- Actualizaciones: compara esta versión con version.json publicado en GitHub ---------- */
-const APP_VERSION = "9d253e3";
+const APP_VERSION = "fe33efd";
 const ACT = { estado: "", nueva: null }; // estado: "", "buscando", "nueva", "al-dia", "sin-conexion", "actualizando"
 async function buscarActualizacion(manual = false) {
   if (ACT.estado === "buscando" || ACT.estado === "actualizando") return;
