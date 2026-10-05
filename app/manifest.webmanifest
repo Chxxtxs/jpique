@@ -1,7 +1,7 @@
 {
   "name": "jPique",
   "short_name": "jPique",
-  "description": "Mareas, vedas, tallas, cuotas y bitácora de capturas para pesca recreativa en la zona central de Chile.",
+  "description": "Mareas, vedas, tallas, cuotas y bitácora de capturas para pesca recreativa en todo Chile.",
   "lang": "es-CL",
   "start_url": "./#hoy",
   "scope": "./",

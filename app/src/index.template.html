@@ -1,5 +1,5 @@
 <title>jPique</title>
-<meta name="description" content="Mareas, vedas, tallas y cuotas para pesca recreativa en la zona central de Chile.">
+<meta name="description" content="Mareas, vedas, tallas y cuotas para pesca recreativa en todo Chile.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -68,8 +68,8 @@ textarea.search, input.search, select.search { width: 100%; padding: 10px 14px; 
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 14px 10px; display: flex; align-items: center; gap: 10px; }
 .brand { font-family: var(--font-display); font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .brand svg { color: var(--accent); }
-.spot { flex: 1; min-width: 0; }
-.spot select { width: 100%; appearance: none; background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23889' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 12px center; border: 1px solid var(--line); border-radius: 999px; padding: 8px 32px 8px 14px; font-size: 14px; font-weight: 500; text-overflow: ellipsis; }
+.spot-btn { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 500; cursor: pointer; }
+.spot-btn #spot-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .icon-btn { flex: none; width: 38px; height: 38px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; cursor: pointer; }
 
 /* Tarjetas y chips */
@@ -191,10 +191,14 @@ details > .in { padding: 0 16px 16px; display: flex; flex-direction: column; gap
 
 /* Pestañas */
 .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
-.tabs-in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
-.tabs button { border: 0; background: none; padding: 9px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 500; color: var(--muted); cursor: pointer; }
+.tabs-in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(6, 1fr); }
+.tabs button { border: 0; background: none; padding: 9px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 500; color: var(--muted); cursor: pointer; min-width: 0; }
 .tabs button[aria-current="page"] { color: var(--fg); }
 .tabs button[aria-current="page"] svg { color: var(--accent); }
+.tipfila { display: grid; grid-template-columns: 84px 1fr; gap: 10px; align-items: start; font-size: 14px; }
+.tipfila > .label { padding-top: 2px; }
+.tag { display: inline-block; font-size: 12.5px; padding: 3px 10px; border-radius: 999px; background: var(--sea-soft); color: var(--sea); font-weight: 500; }
+details > summary { align-items: center; }
 .foot { font-size: 12px; color: var(--muted); padding-block: 24px 8px; }
 @keyframes confeti { to { transform: translateY(340px) rotate(540deg); opacity: 0; } }
 @media (prefers-reduced-motion: no-preference) {
@@ -210,12 +214,12 @@ details > .in { padding: 0 16px 16px; display: flex; flex-direction: column; gap
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M2 20c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M12 3v7M9 7l3 3 3-3"/></svg>
       <span>j<span style="color:var(--accent)">P</span>ique</span>
     </div>
-    <label class="spot"><span class="label" hidden>Punto de pesca</span><select id="spot" aria-label="Punto de pesca"></select></label>
+    <button type="button" class="spot-btn" id="spot-btn" data-lugares aria-haspopup="dialog" aria-label="Elegir lugar de pesca"><span id="spot-nombre"></span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" style="flex:none"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
     <button class="icon-btn" id="theme" type="button" aria-label="Cambiar tema"></button>
   </header>
   <main id="view"></main>
   <p class="foot">Información referencial. La fuente oficial es Sernapesca y Subpesca; revisa la norma antes de salir. Normas verificadas el 5 de octubre de 2026.<br>
-    Viento y temperatura: <a href="https://api.met.no/" target="_blank" rel="noopener">MET Norway</a> (<a href="https://creativecommons.org/licenses/by/4.0/deed.es" target="_blank" rel="noopener">CC BY 4.0</a>). Olas: NOAA WaveWatch III vía <a href="https://www.pacioos.hawaii.edu/" target="_blank" rel="noopener">PacIOOS</a>. Mareas: cálculo propio con el mareógrafo de Valparaíso del <a href="https://uhslc.soest.hawaii.edu/" target="_blank" rel="noopener">UHSLC</a>. Sol, luna, estado del mar y actividad de peces: cálculos de la app a partir de esos datos.</p>
+    Viento y temperatura: <a href="https://api.met.no/" target="_blank" rel="noopener">MET Norway</a> (<a href="https://creativecommons.org/licenses/by/4.0/deed.es" target="_blank" rel="noopener">CC BY 4.0</a>). Olas: NOAA WaveWatch III vía <a href="https://www.pacioos.hawaii.edu/" target="_blank" rel="noopener">PacIOOS</a>. Mareas: cálculo propio con el mareógrafo del UHSLC más cercano (Arica, Antofagasta, Caldera, Valparaíso, Puerto Montt, Puerto Williams, Juan Fernández o Isla de Pascua), del <a href="https://uhslc.soest.hawaii.edu/" target="_blank" rel="noopener">UHSLC</a>. Sol, luna, estado del mar y actividad de peces: cálculos de la app a partir de esos datos.</p>
 </div>
 
 <nav class="tabs" aria-label="Secciones"><div class="tabs-in" id="tabs"></div></nav>
@@ -235,15 +239,31 @@ const md = (m, d) => m * 100 + d;
 const inRange = (date, a, b) => { const x = md(date.getMonth() + 1, date.getDate()); return a <= b ? x >= a && x <= b : x >= a || x <= b; };
 function nthWeekday(y, m, wd, n) { const d = new Date(y, m - 1, 1, 12); const off = (wd - d.getDay() + 7) % 7; d.setDate(1 + off + (n - 1) * 7); return d; }
 function nextMD(date, m, d) { let y = date.getFullYear(); let t = new Date(y, m - 1, d, 12); if (t < date) t = new Date(y + 1, m - 1, d, 12); return t; }
-function salmonSeason(date) {
-  const y = date.getFullYear();
-  const openThis = nthWeekday(y, 11, 5, 2), closeThis = nthWeekday(y, 5, 0, 1);
-  const open = date >= openThis || date <= closeThis;
-  if (open) { const close = date <= closeThis ? closeThis : nthWeekday(y + 1, 5, 0, 1); return { open, until: close }; }
-  return { open, next: openThis };
+const lastSunday = (y, m) => { const d = new Date(y, m, 0, 12); d.setDate(d.getDate() - d.getDay()); return d; }; // m = 1..12
+const regTxt = (r) => r === "Metropolitana" ? "la Región Metropolitana" : `la región de ${r}`;
+const regLabel = (r) => r === "Metropolitana" ? "Región Metropolitana" : `Región de ${r}`;
+const SAL_BASE = { ini: (y) => nthWeekday(y, 11, 5, 2), fin: (y) => nthWeekday(y, 5, 0, 1), txt: "del segundo viernes de noviembre al primer domingo de mayo" };
+const SAL_17 = { ini: (y) => nthWeekday(y, 10, 5, 3), fin: (y) => nthWeekday(y, 5, 0, 1), txt: "del tercer viernes de octubre al primer domingo de mayo",
+  nota: "Vale para las temporadas 2025-2026 a 2027-2028." };
+// Reglas de la planilla de Sernapesca 2026-2027. De Arica al Maule rige el decreto 320 de 1981; el resto de las regiones tiene sus propias fechas.
+const SALMON_REG = {
+  "Ñuble": SAL_17, "Biobío": SAL_17,
+  "La Araucanía": { ...SAL_BASE, nota: "En los ríos de las cuencas Toltén e Imperial el salmón chinook tiene otra temporada (del 15 de septiembre al 31 de marzo, 1 ejemplar). Además, desde septiembre de 2026 está prohibido pescar desde una hora después de la puesta de sol hasta una hora antes del amanecer en todas las aguas de la región." },
+  "Los Ríos": { ini: (y) => nthWeekday(y, 10, 5, 2), fin: (y) => lastSunday(y, 5), txt: "del segundo viernes de octubre al último domingo de mayo", nota: "Está prohibido pescar de 22:00 a 06:00. Algunos ríos tienen reglas propias (pesca con devolución)." },
+  "Los Lagos": { ...SAL_BASE, nota: "Algunos ríos y lagos tienen otras fechas (por ejemplo el Petrohué y la provincia de Palena abren el 1 de noviembre; el Puelo y el Rahue cierran el 31 de mayo). Revisa la planilla." },
+  "Magallanes": { ini: (y) => new Date(y, 9, 16, 12), fin: (y) => new Date(y, 3, 14, 12), txt: "del 16 de octubre al 14 de abril", nota: "En las desembocaduras de los ríos se puede hasta el 28 de febrero y en el lago Fagnano todo el año. El máximo es de 3 ejemplares o 15 kilos entre salmonídeos y perca trucha." },
+  "Aysén": { complejo: true, nota: "En Aysén cada lago y río tiene su propia temporada, y hay veda del 7 de mayo al 11 de octubre. Revisa la planilla de Sernapesca antes de pescar." },
+};
+function salmonSeason(date, region = REGION) {
+  const R = SALMON_REG[region] || SAL_BASE;
+  if (R.complejo) return { complejo: true, nota: R.nota };
+  const y = date.getFullYear(), ini = R.ini(y), fin = R.fin(y), open = date >= ini || date <= fin;
+  const base = { open, txt: R.txt, nota: R.nota || "" };
+  if (open) return { ...base, until: date <= fin ? fin : R.fin(y + 1) };
+  return { ...base, next: ini };
 }
 // tipos: "todo" (todo el año), "veda" [m1,d1,m2,d2], "temp" [m1,d1,m2,d2], "salmon", "devolucion"
-function estado(sp, date, spotTipo) {
+function estado(sp, date, spotTipo, region = REGION) {
   const r = sp.regla;
   if (r.t === "devolucion") return { k: "warn", txt: "Devolución obligatoria", det: "Se puede pescar, pero hay que devolver cada ejemplar vivo al agua." };
   if (r.t === "todo") return { k: "ok", txt: "Abierta todo el año", det: "No tiene veda vigente." };
@@ -260,9 +280,11 @@ function estado(sp, date, spotTipo) {
     return { k: "bad", txt: r.lagos ? "Cerrada en ríos" : "Fuera de temporada", det: `Temporada del ${fmtMD(a, b)} al ${fmtMD(c, d)}. Abre el ${fmtD(n)} (${dias(date, n)}).` + (r.lagos ? " En lagos y embalses está abierta todo el año." : "") };
   }
   if (r.t === "salmon") {
-    const s = salmonSeason(date);
-    if (s.open) return { k: "ok", txt: "Temporada abierta", det: `Cierra el ${fmtD(s.until)} (primer domingo de mayo).` };
-    return { k: "bad", txt: "Fuera de temporada", det: `La temporada en la zona central va del segundo viernes de noviembre al primer domingo de mayo. Abre el ${fmtD(s.next)} (${dias(date, s.next)}).` };
+    const s = salmonSeason(date, region);
+    if (s.complejo) return { k: "warn", txt: "Temporada por cuerpo de agua", det: s.nota };
+    const nota = s.nota ? " " + s.nota : "";
+    if (s.open) return { k: "ok", txt: "Temporada abierta", det: `Cierra el ${fmtD(s.until)}.${nota}` };
+    return { k: "bad", txt: "Fuera de temporada", det: `En ${regTxt(region)} la temporada va ${s.txt}. Abre el ${fmtD(s.next)} (${dias(date, s.next)}).${nota}` };
   }
 }
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -376,8 +398,17 @@ const TIPO_NOMBRE = { orilla: "Playa", "roquerío": "Roquerío", "río": "Río",
 const esMar = (s) => s.tipo === "orilla" || s.tipo === "roquerío";
 const live = {}; // datos recibidos en vivo por punto
 
+// Huso horario y región del lugar elegido (Aysén, Magallanes y Rapa Nui tienen horas distintas a la del continente)
+let TZ = "America/Santiago", REGION = "Valparaíso";
+const TZ_RESPALDO = { "America/Punta_Arenas": "Etc/GMT+3", "Pacific/Easter": "Etc/GMT+6" };
+const FMT_TZ = {};
+const fmtTZ = (tz) => FMT_TZ[tz] || (FMT_TZ[tz] = (() => {
+  const o = { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false };
+  try { return new Intl.DateTimeFormat("en-CA", { timeZone: tz, ...o }); } catch (e) { return new Intl.DateTimeFormat("en-CA", { timeZone: TZ_RESPALDO[tz] || "America/Santiago", ...o }); }
+})());
+function ctx(spot) { if (spot) { TZ = spot.tz || "America/Santiago"; REGION = spot.region; } }
 function nowCL() {
-  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hour12: false }).formatToParts(new Date()).map(x => [x.type, x.value]));
+  const p = Object.fromEntries(fmtTZ(TZ).formatToParts(new Date()).map(x => [x.type, x.value]));
   return { ymd: `${p.year}-${p.month}-${p.day}`, h: +p.hour % 24 };
 }
 const ymdDate = (ymd) => { const [y, m, d] = ymd.split("-").map(Number); return new Date(y, m - 1, d, 12); };
@@ -386,17 +417,13 @@ const addDays = (ymd, n) => { const d = ymdDate(ymd); d.setDate(d.getDate() + n)
 /* Fuentes gratuitas que permiten uso comercial (avisos incluidos):
    - Viento y temperatura: MET Norway Locationforecast (CC BY 4.0)
    - Olas: NOAA WaveWatch III vía PacIOOS ERDDAP (uso y redistribución libres)
-   - Mareas: predicción armónica propia con el mareógrafo de Valparaíso (UHSLC, datos abiertos)
+   - Mareas: predicción armónica propia con mareógrafos del UHSLC en Chile (datos abiertos), en mareas.json
    - Sol: cálculo astronómico en el celular */
 const MET_URL = "https://api.met.no/weatherapi/locationforecast/2.0/compact";
 const OLAS_URL = "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/ww3_global.json";
-// Celda de mar más cercana del modelo de olas (rejilla de 0,5°; longitud en grados este)
-const CELDA_OLAS = { papudo: [-32.5, 288.5], quintero: [-33, 288], concon: [-33, 288], valparaiso: [-33, 288], algarrobo: [-33.5, 288],
-  cartagena: [-33.5, 288], llolleo: [-33.5, 288], navidad: [-34, 288], pichilemu: [-34.5, 287.5], bucalemu: [-34.5, 287.5],
-  constitucion: [-35, 287.5], pelluhue: [-36, 287] };
-const MAREAS = SNAP.mareas; // { estacion, extremos: [[minutos UTC, cm sobre el nivel medio], ...] }
-const FMT_CL = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
-function partesCL(ms) { const p = Object.fromEntries(FMT_CL.formatToParts(new Date(ms)).map(x => [x.type, x.value])); return { ymd: `${p.year}-${p.month}-${p.day}`, hm: `${String(+p.hour % 24).padStart(2, "0")}:${p.minute}` }; }
+let MAREAS = null; // { estaciones: { id: { n, lat, lon, comp, ext: [[minutos UTC, cm sobre el nivel medio], ...] } } }
+try { fetch("mareas.json").then(r => r.ok ? r.json() : null).then(j => { if (j) { MAREAS = j; if (typeof render === "function") render(); } }).catch(() => {}); } catch (e) {}
+function partesCL(ms) { const p = Object.fromEntries(fmtTZ(TZ).formatToParts(new Date(ms)).map(x => [x.type, x.value])); return { ymd: `${p.year}-${p.month}-${p.day}`, hm: `${String(+p.hour % 24).padStart(2, "0")}:${p.minute}` }; }
 
 // Pasa una serie con instantes UTC (ms) a 7 días × 24 horas de Chile desde t0, interpolando entre puntos cercanos
 function aHoras(tiempos, valores, t0) {
@@ -415,8 +442,8 @@ function aHoras(tiempos, valores, t0) {
 }
 
 // Mareas: entre una pleamar y una bajamar la altura sigue una media onda coseno
-function mareasDesde(t0) {
-  const base = medianocheCL(t0), fin = base + 7 * 864e5, ex = MAREAS.extremos;
+function mareasDesde(t0, ex) {
+  const base = medianocheCL(t0), fin = base + 7 * 864e5;
   let i = ex.findIndex(e => e[0] * 6e4 >= base); if (i < 0) return null; i = Math.max(0, i - 1);
   const lista = []; for (; i < ex.length && ex[i][0] * 6e4 <= fin + 864e5; i++) lista.push([ex[i][0] * 6e4, ex[i][1] / 100]);
   if (lista.length < 3) return null;
@@ -444,21 +471,31 @@ function solDia(ymd, lat, lon) {
 }
 
 const MEMO_DATOS = {};
+// El pronóstico guardado usa minutos desde una base para ocupar poco espacio: aquí vuelve a milisegundos
+function expandirOlas(o) { return o ? { t: o.t.map(m => o.b + m * 6e4), hs: o.hs, tp: o.tp } : null; }
+const olasGuardadas = (spot) => spot.celda && SNAP.olas ? expandirOlas(SNAP.olas[spot.celda.join(",")]) : null;
+function expandir(c, spot) { return { tiempo: { t: c.t.map(m => c.b + m * 6e4), v: c.v, d: c.d, c: c.c }, olas: olasGuardadas(spot) }; }
+function crudoVacio() { return { tiempo: { t: [medianocheCL(nowCL().ymd)], v: [null], d: [null], c: [null] }, olas: null }; }
 function datos(spot) {
-  const crudo = live[spot.id] || SNAP.crudo[spot.id], fuente = live[spot.id] ? "live" : "snap", hoy = nowCL().ymd;
-  const clave = `${spot.id}|${fuente}|${hoy}`; if (MEMO_DATOS[clave]) return MEMO_DATOS[clave];
+  const guardado = SNAP.crudo[spot.id];
+  const crudo = live[spot.id] || (guardado ? expandir(guardado, spot) : crudoVacio()), fuente = live[spot.id] ? "live" : guardado ? "snap" : "nada", hoy = nowCL().ymd;
+  const clave = `${spot.id}|${fuente}|${hoy}|${MAREAS ? 1 : 0}|${crudo.olas ? 1 : 0}`; if (MEMO_DATOS[clave]) return MEMO_DATOS[clave];
   const tt = crudo.tiempo.t, t0 = tt[tt.length - 1] >= medianocheCL(hoy) ? hoy : partesCL(tt[0]).ymd;
   const dias = [...Array(7)].map((_, i) => solDia(addDays(t0, i), spot.lat, spot.lon));
   const w = { wind: aHoras(tt, crudo.tiempo.v.map(x => x * 3.6), t0), dir: aHoras(tt, crudo.tiempo.d, t0), temp: aHoras(tt, crudo.tiempo.c, t0),
     sunrise: dias.map(x => x.sale), sunset: dias.map(x => x.pone) };
-  let m = null, ext = [];
+  let m = null, ext = [], est = null, sinMarea = false;
+  const marCarga = !!(esMar(spot) && spot.est && !MAREAS);
   if (esMar(spot)) {
-    const mar = mareasDesde(t0), o = crudo.olas;
+    const E = spot.est && MAREAS && MAREAS.estaciones[spot.est];
+    const mar = E ? mareasDesde(t0, E.ext) : null, o = crudo.olas;
+    sinMarea = !mar;
+    if (E) est = { id: spot.est, n: E.n, km: spot.estKm, comp: E.comp };
     m = { sea_level_height_msl: mar ? mar.serie : new Array(168).fill(null), wave_height: o ? aHoras(o.t, o.hs, t0) : new Array(168).fill(null),
       wave_period: o ? aHoras(o.t, o.tp, t0) : new Array(168).fill(null) };
     ext = mar ? mar.ext : [];
   }
-  return (MEMO_DATOS[clave] = { fuente, t0, w, m, ext });
+  return (MEMO_DATOS[clave] = { fuente, t0, w, m, ext, est, sinMarea, marCarga });
 }
 async function cargarVivo(spot) {
   if (live[spot.id]) return;
@@ -466,21 +503,23 @@ async function cargarVivo(spot) {
   try {
     const met = await fetch(`${MET_URL}?lat=${spot.lat.toFixed(4)}&lon=${spot.lon.toFixed(4)}`, { signal: ctl.signal }).then(r => { if (!r.ok) throw r.status; return r.json(); });
     const ts = met.properties.timeseries;
-    const crudo = { tiempo: { t: ts.map(x => Date.parse(x.time)), v: ts.map(x => x.data.instant.details.wind_speed), d: ts.map(x => x.data.instant.details.wind_from_direction), c: ts.map(x => x.data.instant.details.air_temperature) }, olas: null };
-    const celda = CELDA_OLAS[spot.id];
-    if (celda) {
-      try {
-        const desde = new Date(medianocheCL(nowCL().ymd)).toISOString().slice(0, 19) + "Z", sel = `[(${desde}):1:(last)][(0.0)][(${celda[0]})][(${celda[1]})]`;
-        const o = await fetch(`${OLAS_URL}?${encodeURIComponent(`Thgt${sel},Tper${sel}`)}`, { signal: ctl.signal }).then(r => { if (!r.ok) throw r.status; return r.json(); });
-        const rows = o.table.rows; crudo.olas = { t: rows.map(r => Date.parse(r[0])), hs: rows.map(r => r[4]), tp: rows.map(r => r[5]) };
-      } catch (e) { crudo.olas = (SNAP.crudo[spot.id] || {}).olas || null; } // si falla, se usan las olas guardadas
-    }
+    const crudo = { tiempo: { t: ts.map(x => Date.parse(x.time)), v: ts.map(x => x.data.instant.details.wind_speed), d: ts.map(x => x.data.instant.details.wind_from_direction), c: ts.map(x => x.data.instant.details.air_temperature) }, olas: olasGuardadas(spot) };
     const elegido = addDays(datos(spot).t0, st.dia); // mantener el mismo día elegido al cambiar de fuente
     live[spot.id] = crudo;
     if (spot.id === st.spot) st.dia = Math.min(6, Math.max(0, Math.round((ymdDate(elegido) - ymdDate(datos(spot).t0)) / 864e5)));
     render();
-  } catch (e) { /* sin conexión: se usan los datos guardados */ }
+  } catch (e) { return; /* sin conexión: se usan los datos guardados */ }
   finally { clearTimeout(to); }
+  if (!spot.celda) return;
+  // Oleaje del modelo de NOAA: el servidor puede tardar, así que se pide aparte
+  const ctl2 = new AbortController(), to2 = setTimeout(() => ctl2.abort(), 40000);
+  try {
+    const desde = new Date(medianocheCL(nowCL().ymd)).toISOString().slice(0, 19) + "Z", sel = `[(${desde}):1:(last)][(0.0)][(${spot.celda[0]})][(${spot.celda[1]})]`;
+    const o = await fetch(`${OLAS_URL}?${encodeURIComponent(`Thgt${sel},Tper${sel}`)}`, { signal: ctl2.signal }).then(r => { if (!r.ok) throw r.status; return r.json(); });
+    const rows = o.table.rows;
+    if (rows.length && live[spot.id]) { live[spot.id].olas = { t: rows.map(r => Date.parse(r[0])), hs: rows.map(r => r[4]), tp: rows.map(r => r[5]) }; if (spot.id === st.spot) render(); }
+  } catch (e) { /* se quedan las olas guardadas */ }
+  finally { clearTimeout(to2); }
 }
 const hhmm = (x) => { let h = Math.floor(x), m = Math.round((x - h) * 60); if (m === 60) { h++; m = 0; } return `${String(h % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`; };
 const fmtH = (x) => (x >= 0 ? "+" : "−") + Math.abs(x).toFixed(2) + " m";
@@ -503,11 +542,11 @@ function lunaPos(ms, lat, lon) {
   const H = RAD * (280.16 + 360.9856235 * d) + RAD * lon - ra, phi = RAD * lat;
   return { alt: Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H)), H };
 }
-// Medianoche de Chile (America/Santiago) de un día "YYYY-MM-DD", en milisegundos UTC
+// Medianoche (en el huso horario del lugar elegido) de un día "YYYY-MM-DD", en milisegundos UTC
 function medianocheCL(ymd) {
   const [y, m, d] = ymd.split("-").map(Number); let t = Date.UTC(y, m - 1, d, 4);
   for (let k = 0; k < 2; k++) {
-    const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date(t)).map(x => [x.type, x.value]));
+    const p = Object.fromEntries(fmtTZ(TZ).formatToParts(new Date(t)).map(x => [x.type, x.value]));
     const loc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute); t += Date.UTC(y, m - 1, d) - loc;
   }
   return t;
@@ -534,7 +573,7 @@ function actividad(spot, D, di) {
   const toH = (s) => { const [a, b] = s.slice(11).split(":").map(Number); return a + b / 60; };
   const sr = toH(D.w.sunrise[di]), ss = toH(D.w.sunset[di]);
   const g = (x, c, s) => Math.exp(-(((x - c) / s) ** 2));
-  const mar = !!D.m, serie = D.m ? D.m.sea_level_height_msl : null;
+  const mar = !!D.m && !D.sinMarea, serie = D.m ? D.m.sea_level_height_msl : null;
   const mov = []; let maxMov = 0.01;
   for (let h = 0; h < 24; h++) { const i = di * 24 + h; const a = serie ? serie[Math.max(0, i - 1)] : null, b = serie ? serie[Math.min(serie.length - 1, i + 1)] : null;
     const v = a != null && b != null ? (b - a) / 2 : 0; mov.push(v); maxMov = Math.max(maxMov, Math.abs(v)); }
@@ -602,12 +641,12 @@ function lunaHTML(spot, D, di) {
   </section>`;
 }
 // Coeficiente de marea (escala 20 a 120, como en las tablas de mareas): compara el rango del día con las mareas vivas y muertas medias
-const ARM = (SNAP.mareas && SNAP.mareas.componentes) || { M2: 42.7, S2: 14.6 };
+const ARM_DEFECTO = { M2: 42.7, S2: 14.6 };
 function coefMarea(D, di) {
-  const ex = D.ext; let rango = 0;
+  const ex = D.ext, A = (D.est && D.est.comp && D.est.comp.M2 && D.est.comp.S2) ? D.est.comp : ARM_DEFECTO; let rango = 0;
   for (let i = 0; i < ex.length - 1; i++) { const a = ex[i], b = ex[i + 1]; if (Math.floor(a.t / 24) === di || Math.floor(b.t / 24) === di) rango = Math.max(rango, Math.abs(a.h - b.h)); }
   if (!rango) return null;
-  const viva = 2 * (ARM.M2 + ARM.S2) / 100, muerta = 2 * (ARM.M2 - ARM.S2) / 100;
+  const viva = 2 * (A.M2 + A.S2) / 100, muerta = 2 * (A.M2 - A.S2) / 100;
   const c = Math.round(Math.min(120, Math.max(20, 45 + (rango - muerta) / (viva - muerta) * 50)));
   return { c, rango, txt: c >= 90 ? "Mareas vivas" : c <= 50 ? "Mareas muertas" : "Marea media", k: c >= 90 ? "ok" : c <= 50 ? "bad" : "warn" };
 }
@@ -679,9 +718,10 @@ const ICON = {
   normas: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h7"/>',
   fuentes: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
   capturas: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  tips: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
 };
 const svgI = (p, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
-const TABS = [["hoy", "Hoy"], ["mareas", "Mareas"], ["especies", "Especies"], ["capturas", "Capturas"], ["normas", "Normas"]];
+const TABS = [["hoy", "Hoy"], ["mareas", "Mareas"], ["especies", "Especies"], ["capturas", "Capturas"], ["tips", "Tips"], ["normas", "Normas"]];
 
 /* ---------- Vistas ---------- */
 // Índice del día de hoy dentro del pronóstico (null si el pronóstico guardado ya no incluye hoy)
@@ -710,8 +750,8 @@ function vHoy() {
   const medio = esMar(spot) ? "mar" : "dulce";
   const lista = ESPECIES.filter(s => s.medio === medio).map(s => ({ s, e: estado(s, hoyDate, spot.tipo) }));
   const cerradas = lista.filter(x => x.e.k === "bad"), devol = lista.filter(x => x.e.k === "warn");
-  let mareaHTML = "";
-  if (D.m) {
+  let mareaHTML = D.m && D.sinMarea ? `<div class="callout info small"><strong>Sin marea.</strong> ${H(sinMareaTxt(D))}</div>` : "";
+  if (D.m && !D.sinMarea) {
     const dia = addDays(D.t0, di);
     const ex = D.ext.filter(e => e.ymd === dia);
     const ahoraT = (Date.now() - medianocheCL(D.t0)) / 3.6e6, pasada = (e) => esHoy && e.t < ahoraT;
@@ -726,7 +766,7 @@ function vHoy() {
     ${HORAS.map(h => `<button type="button" data-hora="${h}" aria-pressed="${!ahora && hora === h}" class="num">${String(h).padStart(2, "0")}:00</button>`).join("")}</div>`;
   return `<div class="stack-lg view">
     <section class="hero">
-      <span class="label">${H(TIPO_NOMBRE[spot.tipo])} · Región de ${H(spot.region)}</span>
+      <span class="label">${H(TIPO_NOMBRE[spot.tipo])} · ${H(regLabel(spot.region))}</span>
       <h1>${H(spot.nombre)}</h1>
       ${badge(D, fuera)}
     </section>
@@ -780,13 +820,19 @@ function rowSp(s, e) {
     <span class="txt"><strong>${H(s.nombre)}</strong><span>${H(e.det)}</span></span><span class="chip ${e.k}">${H(e.txt.split(" (")[0])}</span></button>`;
 }
 
+const sinMareaTxt = (D) => D.marCarga ? "Cargando las mareas…" : "No hay una predicción de marea confiable para este lugar: no hay un mareógrafo cercano (canales y fiordos). Consulta la tabla del SHOA.";
+function notaEstacion(D) {
+  const e = D.est; if (!e) return "";
+  const t = `Estas mareas se calculan con las mediciones del mareógrafo de ${e.n} (UHSLC), a ${e.km} km de este lugar.`;
+  return t + (e.km <= 60 ? " La hora puede variar unos minutos." : e.km <= 250 ? " La hora y la altura pueden variar en este lugar." : " Está lejos del mareógrafo: úsala solo como referencia.");
+}
 function vMareas() {
   const spot = SPOTS.find(s => s.id === st.spot), D = datos(spot), now = nowCL();
   const horaSel = st.hora ?? (st.dia === idxHoy(D, now) ? now.h : null);
   const activ = actividadHTML(spot, D, st.dia, horaSel, now.h);
-  if (!D.m) return `<div class="stack-lg view"><section class="hero"><span class="label">Mareas</span><h1>${H(spot.nombre)}</h1></section>
+  if (!D.m || D.sinMarea) return `<div class="stack-lg view"><section class="hero"><span class="label">Mareas</span><h1>${H(spot.nombre)}</h1></section>
     ${diasHTML(D, now)}
-    <div class="callout info">En ríos, lagos y embalses no hay marea. Abajo tienes la actividad de peces, la luna y el viento hora a hora.</div>${activ}${lunaHTML(spot, D, st.dia)}${horas(D, st.dia)}</div>`;
+    <div class="callout info">${D.m ? sinMareaTxt(D) : "En ríos, lagos y embalses no hay marea."} Abajo tienes la actividad de peces, la luna y el viento hora a hora.</div>${activ}${lunaHTML(spot, D, st.dia)}${horas(D, st.dia)}</div>`;
   const ex = D.ext;
   const dia = addDays(D.t0, st.dia);
   const serie = D.m.sea_level_height_msl;
@@ -828,7 +874,7 @@ function vMareas() {
     ${activ}
     ${lunaHTML(spot, D, st.dia)}
     ${horas(D, st.dia)}
-    <div class="callout warn small"><strong>Ojo:</strong> estas mareas se calculan con las mediciones del mareógrafo de Valparaíso (UHSLC). En otros puntos de la costa central la hora puede variar unos minutos. Altura en metros sobre el nivel medio del mar, no sobre el nivel de reducción de las cartas del SHOA. No usar para navegar.</div>
+    <div class="callout warn small"><strong>Ojo:</strong> ${H(notaEstacion(D))} Altura en metros sobre el nivel medio del mar, no sobre el nivel de reducción de las cartas del SHOA. No usar para navegar.</div>
   </div>`;
 }
 function horas(D, dia) {
@@ -873,6 +919,7 @@ function ficha(id) {
       <div class="wide"><span class="label">Dónde</span><span>${s.medio === "mar" ? "Mar: aguas interiores, mar territorial y zona económica exclusiva" : "Ríos, lagos, lagunas y embalses"}</span></div>
     </div>
     <section class="stack"><h3>Cómo reconocerla</h3><ul class="clean">${s.rasgos.map(r => `<li>${H(r)}</li>`).join("")}</ul></section>
+    <section class="stack"><h3>Cómo pescarla</h3>${tipsEspecie(s)}<button type="button" class="back" data-go="tips" style="align-self:flex-start">Ver todos los tips de pesca</button></section>
     ${s.confunde.length ? `<section class="stack"><h3>Se confunde con</h3><div class="list">${s.confunde.map(c => { const o = SPMAP[c.id]; const fo = foto(o); return `<button class="row" data-sp="${o.id}">${fo ? `<img class="thumb" src="${fo.archivo}" alt="">` : `<span class="thumb"></span>`}<span class="txt"><strong>${H(o.nombre)}</strong><span style="white-space:normal">${H(c.como)}</span></span></button>`; }).join("")}</div></section>` : ""}
     ${(s.notas || s.medio === "mar") ? `<section class="stack"><h3>A considerar</h3><ul class="clean">${(s.notas || []).map(n => `<li>${H(n)}</li>`).join("")}${s.medio === "mar" && s.norma.includes("443") ? `<li>${MAX_MAR}</li>` : ""}<li>Prohibido vender lo que pescas en forma recreativa.</li></ul></section>` : ""}
     <section class="card stack" style="gap:6px"><span class="label">Fuente legal</span><p>${H(s.norma)}</p>
@@ -1037,7 +1084,7 @@ function vNormas() {
         <p>Buenas prácticas pedidas por la norma: devolver vivos los peces bajo talla, llevarse la basura, devolver la carnada viva que sobre y no pescar cerca de chungungos o pingüinos alimentándose.</p>
         <p class="muted">Res. Ex. N.° 443/2025 de Subpesca (publicada en el Diario Oficial el 25-02-2025).</p></div></details>
       <details><summary>Truchas y salmones (ríos, lagos y embalses)</summary><div class="in">
-        <p>Temporada en la zona central: <strong>segundo viernes de noviembre al primer domingo de mayo</strong>. ${sal.open ? `Abierta hasta el ${fmtD(sal.until)}.` : `Este año abre el <strong>${fmtD(sal.next)}</strong>.`}</p>
+        <p>Temporada en ${regTxt(REGION)} (el lugar que elegiste): ${sal.complejo ? `<strong>distinta en cada lago y río</strong>. ${H(sal.nota)}` : `<strong>${H(sal.txt)}</strong>. ${sal.open ? `Abierta hasta el ${fmtD(sal.until)}.` : `Este año abre el <strong>${fmtD(sal.next)}</strong>.`} ${H(sal.nota)}`}</p>
         <p>Máximo 3 ejemplares o 15 kilos por día. Solo señuelo artificial con un anzuelo simple o un triple (araña), plomada de hasta 100 g, una caña a la vez y chinguillo de hasta 100 cm de largo y 70 cm de diámetro.</p>
         <p>Prohibido pescar de 21:00 a 06:00 a menos de 500 m de desembocaduras de ríos y esteros y de desagües de lagos y tranques.</p>
         <p class="muted">D.S. N.° 320 de 1981, modificado por D.S. 425 y 149 de 1986.</p></div></details>
@@ -1071,7 +1118,10 @@ const FUENTES = [
   { g: "Tiempo, mar y mareas", items: [
     { n: "MET Norway (Instituto Meteorológico de Noruega)", d: "Viento y temperatura por hora, hasta 9 días.", l: "CC BY 4.0", lu: CC_BY, u: "https://api.met.no/" },
     { n: "NOAA WaveWatch III, servido por PacIOOS (Universidad de Hawái)", d: "Altura y periodo de las olas, 7 días.", l: "Uso y redistribución libres", u: "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/ww3_global.html" },
-    { n: "University of Hawaii Sea Level Center (UHSLC) · Mareógrafo de Valparaíso, estación 081", d: "Mediciones del nivel del mar con las que la app calcula pleamares, bajamares y coeficiente de marea. Caldwell, P. C., M. A. Merrifield, P. R. Thompson (2015), NOAA NCEI Accession 0019568.", l: "Datos abiertos", u: "https://uhslc.soest.hawaii.edu/" },
+    { n: "University of Hawaii Sea Level Center (UHSLC) · Mareógrafos de Chile", d: "Mediciones del nivel del mar de 8 estaciones (Arica, Antofagasta, Caldera, Valparaíso, Puerto Montt, Puerto Williams, Isla Juan Fernández e Isla de Pascua) con las que la app calcula pleamares, bajamares y coeficiente de marea. Cada lugar usa el mareógrafo que le corresponde; en canales y fiordos de Aysén y Magallanes no hay predicción. Caldwell, P. C., M. A. Merrifield, P. R. Thompson (2015), NOAA NCEI Accession 0019568.", l: "Datos abiertos", u: "https://uhslc.soest.hawaii.edu/" },
+  ]},
+  { g: "Tips de pesca", items: [
+    { n: "Resumen propio de guías y fichas oficiales", d: "Los tips de la pestaña Tips resumen, con palabras propias, las fichas ícticas de Sernapesca, la guía de The Nature Conservancy sobre peces litorales y guías de pescadores chilenos. Cada tip enlaza su fuente. Son orientaciones generales, no garantías.", l: "Resumen con fuente", u: "https://www.sernapesca.cl/manuales_y_publicaciones/temporadas-de-pesca-recreativa-en-chile/" },
   ]},
   { g: "Cálculos de la app", items: [
     { n: "Sol, luna y actividad de peces", d: "Salida y puesta del sol y la luna, fase, luz de luna de noche y actividad estimada (teoría solunar, marea y luz). Se calculan en el celular con fórmulas astronómicas públicas.", l: "Propio", u: null },
@@ -1159,13 +1209,17 @@ async function prepararFoto(file) {
 }
 // Condiciones del momento de la captura, si están dentro del pronóstico disponible
 function condiciones(spotId, fecha) {
+  const prev = [TZ, REGION], sp0 = SPOTS.find(s => s.id === spotId); if (sp0) ctx(sp0);
+  try { return condicionesIn(spotId, fecha); } finally { TZ = prev[0]; REGION = prev[1]; }
+}
+function condicionesIn(spotId, fecha) {
   const spot = SPOTS.find(s => s.id === spotId); if (!spot) return null;
   const D = datos(spot), [d, t] = fecha.split("T"), di = Math.round((ymdDate(d) - ymdDate(D.t0)) / 864e5), h = +t.slice(0, 2);
   const out = { luna: lunaFase(ymdDate(d)).nombre };
   if (di < 0 || di > 6) return out;
   const i = di * 24 + h;
   if (D.w.wind[i] != null) out.viento = Math.round(D.w.wind[i]); if (D.w.temp[i] != null) out.temp = Math.round(D.w.temp[i]);
-  if (D.m) { if (D.m.wave_height[i] != null) out.ola = +D.m.wave_height[i].toFixed(1); const s = D.m.sea_level_height_msl; out.marea = s[i + 1] > s[i - 1] ? "subiendo" : "bajando"; }
+  if (D.m) { if (D.m.wave_height[i] != null) out.ola = +D.m.wave_height[i].toFixed(1); const s = D.m.sea_level_height_msl; if (!D.sinMarea && s[i + 1] != null && s[i - 1] != null) out.marea = s[i + 1] > s[i - 1] ? "subiendo" : "bajando"; }
   out.actividad = actividad(spot, D, di).horas[h];
   return out;
 }
@@ -1242,7 +1296,7 @@ function activarSelector() {
 function pintarPrev() {
   $("#cap-prev").innerHTML = FORM_FOTOS.map((b, i) => `<span class="phw" style="border-radius:10px;overflow:hidden"><img class="ph" src="${urlDe(b)}" alt="Foto ${i + 1}"><button type="button" class="car-btn" data-foto-quitar="${i}" aria-label="Quitar foto ${i + 1}" style="top:20px;right:4px;left:auto;width:28px;height:28px">${svgI('<path d="M6 6l12 12M18 6L6 18"/>', 14)}</button></span>`).join("");
 }
-const opcionesLugar = (sel) => `${SPOTS.map(s => `<option value="${s.id}" ${s.id === sel ? "selected" : ""}>${H(s.nombre)}</option>`).join("")}<option value="otro" ${sel === "otro" ? "selected" : ""}>Otro lugar</option>`;
+const opcionesLugar = (sel) => `${(SNAP.regiones || []).map(r => `<optgroup label="${H(r)}">${SPOTS.filter(s => s.region === r).map(s => `<option value="${s.id}" ${s.id === sel ? "selected" : ""}>${H(s.nombre)}</option>`).join("")}</optgroup>`).join("")}<option value="otro" ${sel === "otro" ? "selected" : ""}>Otro lugar</option>`;
 
 /* --- Carpetas --- */
 function abrirFormCarpeta(id = null) {
@@ -1389,7 +1443,7 @@ function validarCaptura() {
   const msgs = [];
   if (sp) {
     const tm = tallaMin(sp); if (tm && largo && largo < tm) msgs.push(`Bajo la talla mínima de ${tm} cm: debe devolverse al agua.`);
-    const f = $("#cap-fecha").value; if (f) { const spot = SPOTS.find(s => s.id === $("#cap-spot").value); const e = estado(sp, ymdDate(f.slice(0, 10)), spot ? spot.tipo : null);
+    const f = $("#cap-fecha").value; if (f) { const spot = SPOTS.find(s => s.id === $("#cap-spot").value); const e = estado(sp, ymdDate(f.slice(0, 10)), spot ? spot.tipo : null, spot ? spot.region : REGION);
       if (e.k === "bad") msgs.push(`${sp.nombre}: ${e.txt.toLowerCase()} en esa fecha. Debe devolverse al agua.`); if (e.k === "warn") msgs.push(`${sp.nombre}: devolución obligatoria.`); }
   }
   av.hidden = !msgs.length; av.textContent = msgs.join(" ");
@@ -1610,9 +1664,263 @@ async function compartirPermiso() {
   try { await navigator.share({ title: "Permiso Supremo de Pesca", text: "PERMISO SUPREMO DE PESCA: tienes permiso sobre todos para ir a pescar. Vamos, tú puedes. (jPique)" }); } catch (e) {}
 }
 
+/* ---------- Tips de pesca: qué usar según marea, luz, agua y especie ---------- */
+// Basado en fichas de Sernapesca, la guía de The Nature Conservancy y guías de pescadores chilenos.
+// Son orientaciones generales, no garantías. Lo legal (aparejos, carnada viva) sale de las normas oficiales.
+const TIPS_FUENTES = {
+  sn: ["Sernapesca · Fichas ícticas de especies dulceacuícolas", "https://www.sernapesca.cl/app/uploads/2023/11/fichas_icticas_de_especies_para_la_pesca_recreativa_parte_2_especies_dulceacuicolas.pdf"],
+  tnc: ["The Nature Conservancy · Guía para una pesca recreativa marina sustentable (peces litorales de Chile)", "https://www.nature.org/content/dam/tnc/nature/en/documents/TNC_CHILE_LIBRILLO_PECES_LITORALES.pdf"],
+  sm: ["Club de Pesca Stella Maris · La pesca de la corvina", "https://stellamaris.cl/la-pesca-de-la-corvina/"],
+  sm2: ["Club de Pesca Stella Maris · Consejos por especie", "http://www.stellamaris.cl/Html/Consejos/Peces/Peces.html"],
+  oo: ["Outdoor Online · Guía de pesca en el mar desde la orilla en Chile", "https://outdooronline.cl/blogs/instinto-outdoor/guia-completa-de-pesca-en-el-mar-desde-la-orilla-en-chile-surfcasting-equipos-tecnicas-y-secretos"],
+  dm: ["D Multisport · La pesca del lenguado", "https://www.dmultisport.cl/article/la-pesca-del-lenguado"],
+  mb: ["Micky Baits · Aprende a pescar truchas en Chile", "https://www.mickybaits.cl/index.php/blog/45-pescar-truchas-en-chile"],
+  mj: ["Micky Baits · Cómo pescar jureles con jig", "https://www.mickybaits.cl/index.php/blog/61-como-pescar-jureles-con-jig"],
+  pc: ["Pesca-Chile · Guía para la pesca de truchas", "https://www.pesca-chile.cl/especies/trucha/guia/"],
+  ai: ["Aipeces · Pesca nocturna", "https://www.aipeces.com/blog/pesca-nocturna-como-pescar-de-noche"],
+  pn: ["Pesca.news · La eficacia de los señuelos oscuros", "https://www.pesca.news/noticias/48655/pesca-carnivora-la-eficacia-de-los-senuelos-oscuros"],
+  pcm: ["Pesca Cosmar · Señuelos de pesca", "https://www.pescacosmar.com/blog/senuelos-de-pesca/"],
+  wp: ["Weekend · Pejerrey: técnicas para cada ámbito", "https://weekend.perfil.com/noticias/pesca/pejerrey-tecnicas-para-cada-ambito.phtml"],
+  pj: ["Pesca Deportiva LMS · La pesca del jurel", "https://pesca-deportiva-lms.blogspot.com/2007/11/la-pesca-del-jurel.html"],
+  vm: ["La pesca de la vieja", "https://verilmajorero.blogspot.com/p/la-pesca-de-la-vieja.html"],
+  cc: ["CampingChile · Pesca de sierras en Chile", "https://www.campingchile.cl/actividades/pesca-de-sierras-en-chile/"],
+  dp: ["Dónde Pescar · Maíz como carnada para la carpa", "https://www.dondepescar.com/dondepescar/199-preparando_maiz_como_carnada_para_la_carpa"],
+  vi: ["Wikipedia · Seriola lalandi", "https://es.wikipedia.org/wiki/Seriola_lalandi"],
+};
+const CONS = "Recomendación de conservación de la guía de The Nature Conservancy y Sernapesca (no es una obligación legal): ";
+const LEGAL_TRUCHA = "Solo señuelo artificial con un anzuelo simple o uno triple (araña), plomada de máximo 100 g y una caña a la vez. La carnada viva está prohibida.";
+const ESP_TIPS = {
+  corvina: { donde: "Playas de arena con mucha pulga de mar, bordes rocosos con profundidad, pozones y detrás de la rompiente.",
+    carnada: ["Machas (la mejor)", "Pulga de mar", "Camarón fantasma (nape)", "Sardina, anchoa o pejerrey", "Piure", "Jaiba sin caparazón", "Jibia en trozos"],
+    senuelos: ["Vinilos con jighead", "Jigs o chispas de 40 a 70 g", "Minnows duros"],
+    colores: "Naturales: lomo azul, flancos plateados y panza blanca. En días nublados, morado, rosado o amarillo con contraste.",
+    momento: "De 2 horas antes a 2 horas después de la pleamar. Amanecer (hasta 1 hora después de salir el sol) y atardecer. También de noche.",
+    tecnica: "Recuperación lenta con la línea tensa. Olas medianas con espuma, de menos de 2 m. Líder de fluorocarbono de unos 80 cm.", f: ["sm", "oo"] },
+  lenguado: { donde: "Fondos de arena, bancos de arena, estructuras bajo el agua y rompientes.",
+    carnada: ["Pejerrey salado de 10 a 15 cm, cortado en diagonal"], senuelos: [],
+    momento: "De noche. De día se queda quieto y enterrado en la arena.",
+    tecnica: "Recoge cuando la ola sale del mar y deja la línea quieta cuando el retroceso hace succión. Espera unos 10 segundos tras sentir el tirón antes de clavar. Anzuelo tipo worm 4/0 o 5/0 y plomo de 30 a 60 g.", f: ["dm"] },
+  sierra: { donde: "Bahías y muelles, cerca de puntas rocosas y desembocaduras. Llega a la costa persiguiendo cardúmenes.",
+    carnada: ["Peces pequeños: come sardinas, anchovetas y jureles"], senuelos: ["Jigs y cucharas si el cardumen está a tu alcance"],
+    momento: "Amanecer y atardecer. Con día nublado o corriente puede picar todo el día.",
+    tecnica: "Líder de acero de unos 30 cm: tiene dientes muy afilados y corta el nylon.", f: ["cc", "mj"] },
+  rollizo: { donde: "Entre fondos de roca y de arena, en grupos de 2 a 5.", come: "Cangrejos, panchotes, lapas y chitones.",
+    carnada: ["Crustáceos como cangrejo o panchote (es lo que come)"], cons: CONS + "libéralo si pescas con línea y evita capturarlo en verano (se reproduce).", f: ["tnc"] },
+  sargo: { donde: "Entre fondos de roca y de arena, en grupos pequeños y grandes.", come: "Principalmente algas.",
+    tecnica: "Como se alimenta sobre todo de algas, no encontramos una carnada tradicional documentada.", cons: CONS + "libéralo y evita capturarlo en verano.", f: ["tnc"] },
+  pintacha: { donde: "Grietas, huirales (bosques de algas pardas) y bordes rocosos.", come: "Crustáceos, moluscos, erizos y estrellas de mar.",
+    carnada: ["Crustáceos o moluscos (es lo que come)"], senuelos: ["Señuelos artificiales cerca del fondo"], tecnica: "Línea de mano con carnada, o señuelos, pegado a las grietas.",
+    cons: CONS + "libéralo y evita capturarlo en verano.", f: ["tnc", "sm2"] },
+  baunco: { donde: "Roqueríos con mucho oleaje y poca profundidad, en grupos de 5 a 10.", come: "Pequeños moluscos y algas.",
+    carnada: ["Jibia (calamar)", "Cangrejo"], tecnica: "Se pesca con carnada, no con señuelo.", cons: CONS + "libéralo y evita capturarlo en verano.", f: ["tnc", "sm2"] },
+  vieja: { donde: "Fondos rocosos con grandes cuevas y grietas.", come: "Lapas, jaibas pequeñas, locos, camarones, panchotes, erizos y estrellas de mar.",
+    carnada: ["Cangrejo (su favorito)", "Erizo"], tecnica: "Anzuelo de boca grande y nylon grueso (50 o 60), cerca de las cuevas.",
+    cons: CONS + "es una especie en baja: libérala y no la captures en octubre y noviembre (reproducción).", f: ["tnc", "vm"] },
+  pejeperro: { donde: "Fondos rocosos con huirales y corriente fuerte. Vive desde el norte del Perú hasta Valparaíso.", come: "Lapas, jaibas pequeñas, locos, camarones, erizos y estrellas de mar.",
+    carnada: ["Carnada de fondo (crustáceos y moluscos)"], senuelos: ["Vinilos con equipo de shore jigging de potencia media a alta"],
+    cons: CONS + "ha disminuido en la costa centro-norte: libéralo y evita capturarlo en verano.", f: ["tnc", "sm2"] },
+  acha: { donde: "Roqueríos con mucho oleaje. Vive en el norte de Chile, así que más al sur es rara.", come: "Algas, anémonas y esponjas.",
+    cons: CONS + "si cae con línea, libérala.", f: ["tnc"] },
+  jurel: { donde: "Muelles y roqueríos con algo de profundidad, donde hay agua en movimiento: rompientes, canales y corrientes.",
+    carnada: ["Sardina en tiras", "Caballa"], senuelos: ["Jigs y microseñuelos casi en la superficie", "Rapalas"],
+    colores: "Plata, blanco y verde oliva. Responde a todo lo brillante y en movimiento.",
+    tecnica: "Con jig: déjalo llegar al fondo y recupera con tirones cortos y rápidos. Con carnada: anzuelo 8 o 10 y línea de 0,40, sin plomo.", f: ["mj", "pj"] },
+  bonito: { donde: "Muelles y rompientes con agua en movimiento.", senuelos: ["Jigs plateados, blancos o verde oliva, adaptando el tamaño"],
+    tecnica: "Se pesca parecido al jurel, con tirones cortos y rápidos.", f: ["mj"] },
+  toremo: { donde: "Pez de aguas abiertas, en cardúmenes. Le gustan los bajos y cantiles: poca agua que cae rápido a mucha profundidad, con corriente.",
+    tecnica: "No encontramos tips verificados de carnada o señuelo para pesca desde la orilla.", f: ["vi"] },
+  arcoiris: { donde: "Corrientes moderadas, tramos medios de fondo pedregoso y algo de vegetación. Ríos y lagos de agua fría y cristalina.",
+    come: "Insectos en estado de larva, moluscos, crustáceos, gusanos, renacuajos y peces pequeños.", legal: LEGAL_TRUCHA,
+    senuelos: ["Cucharillas (spinners) números 1 a 3", "Minnows y pececillos artificiales de hasta 7 cm", "Moscas artificiales"],
+    momento: "Primeras horas de la mañana y últimas de la tarde.", tecnica: "Las cucharillas rinden en zonas de corriente. Si llueve, busca zonas protegidas del río. Con viento fuerte, una caña más pesada da más precisión.", f: ["sn", "mb", "pc"] },
+  cafe: { donde: "Ríos y lagos de agua fría y clara.", come: "Insectos acuáticos y terrestres y crustáceos. Los adultos comen peces.", legal: LEGAL_TRUCHA,
+    senuelos: ["Cucharillas (spinners) números 1 a 3", "Minnows y pececillos artificiales", "Moscas artificiales"],
+    momento: "Primeras horas de la mañana y últimas de la tarde.", f: ["sn", "mb"] },
+  percatrucha: { donde: "Lagos y zonas bajas de los ríos, cerca de fondos pedregosos sin mucho fango y de corrientes.", come: "Crustáceos, larvas de insectos, moluscos y restos de peces.",
+    legal: LEGAL_TRUCHA, cons: "La ficha oficial la describe como vulnerable: si puedes, devuélvela.", f: ["sn"] },
+  "pejerrey-cl": { donde: "Aguas bien oxigenadas, transparentes y de poca corriente, con al menos 40 cm de profundidad y refugios de vegetación.", come: "Insectos, pequeños invertebrados y algas filamentosas.",
+    carnada: ["Lombriz pequeña (rinde mucho con frío)"], legal: "La carnada viva está permitida.", f: ["sn", "wp"] },
+  "pejerrey-ar": { donde: "Aguas abiertas de embalses, tranques y lagunas, mejor si están despejadas de vegetación. En días cálidos baja a capas más profundas.",
+    come: "Zooplancton de joven, insectos acuáticos de intermedio y peces de adulto.", carnada: ["Mojarra (pez pequeño)", "Lombriz pequeña", "Camarones"], senuelos: ["Jigs y pequeños plugs al amanecer y atardecer"],
+    legal: "La carnada viva está permitida.", momento: "Amanecer y atardecer.",
+    tecnica: "En el Rapel se usa la armada de fondo (balancín). Con viento moderado prueba la orilla donde rompe suave; con calma, baja la línea a media agua o al fondo hasta encontrar el cardumen.", f: ["sn", "wp"] },
+};
+ESP_TIPS["lenguado-chico"] = ESP_TIPS.lenguado;
+
+function tipsEspecie(s) {
+  const t = ESP_TIPS[s.id];
+  if (!t) return `<p class="small muted">Todavía no tenemos tips verificados para esta especie.</p>`;
+  const fila = (n, v) => v ? `<div class="tipfila"><span class="label">${n}</span><span>${v}</span></div>` : "";
+  const tags = (a) => a && a.length ? `<span style="display:flex;flex-wrap:wrap;gap:6px">${a.map(x => `<span class="tag">${H(x)}</span>`).join("")}</span>` : "";
+  return `<div class="stack" style="gap:10px">
+    ${t.legal ? `<div class="callout ${/prohibida/.test(t.legal) ? "warn" : "info"} small"><strong>Lo que dice la norma.</strong> ${H(t.legal)}</div>` : ""}
+    ${fila("Dónde", H(t.donde || ""))}${fila("Qué come", H(t.come || ""))}
+    ${t.carnada && t.carnada.length ? fila("Carnada", tags(t.carnada)) : ""}${t.senuelos && t.senuelos.length ? fila("Señuelos", tags(t.senuelos)) : ""}
+    ${fila("Colores", H(t.colores || ""))}${fila("Cuándo", H(t.momento || ""))}${fila("Técnica", H(t.tecnica || ""))}
+    ${t.cons ? `<div class="callout info small">${H(t.cons)}</div>` : ""}
+    <p class="small muted">Fuentes: ${(t.f || []).map(k => `<a href="${TIPS_FUENTES[k][1]}" target="_blank" rel="noopener">${H(TIPS_FUENTES[k][0].split(" · ")[0])}</a>`).join(", ")}</p>
+  </div>`;
+}
+
+/* Secciones generales, con la fuente de cada una */
+const TIPS_MAR = [
+  { t: "Según la marea", items: [
+    ["Marea subiendo", "Es el mejor momento general para pescar desde la orilla. Los cambios de marea (cuando sube o baja) son momentos productivos.", ["oo"]],
+    ["Cerca de la pleamar", "Para corvina, la ventana va de 2 horas antes a 2 horas después de la pleamar.", ["sm"]],
+    ["Agua casi quieta (estoa)", "Entre una marea y otra el agua se detiene y el pique suele bajar. Aprovecha para cambiar de lugar, revisar la línea o armar el aparejo.", ["oo"]],
+    ["Marea bajando", "Sirve para ubicar los canales y pozones que se forman. Cuando la marea vuelva a subir, lanza a esos lugares.", ["oo"]],
+    ["Mareas vivas (coeficiente alto)", "Hay más corriente. Usa plomos con buen agarre, como los de pirámide o garra, para que el aparejo no se arrastre.", ["oo"]],
+  ]},
+  { t: "Según la luz y la luna", items: [
+    ["Amanecer y atardecer", "Son las horas más activas. La corvina pica mejor al amanecer (hasta 1 hora después de salir el sol) y al atardecer; la sierra también.", ["sm", "cc"]],
+    ["De noche: el olor manda", "En la oscuridad el pez te encuentra por el olor. El calamar (jibia) es una carnada especial para eso.", ["pcm", "ai"]],
+    ["Noche oscura (luna nueva)", "Señuelos negros u oscuros y de vibración, con recuperación lenta: se recortan mejor contra la superficie. Con luna nueva casi no hay ataques a señuelos de superficie.", ["pn", "pcm", "ai"]],
+    ["Noche con luna clara", "Señuelos superficiales y de colores claros o reflectantes.", ["pcm"]],
+    ["No alumbres el agua", "Si pescas de noche, no apuntes la linterna a donde pescas: asusta. Usa luz roja, apunta hacia abajo y pesca acompañado.", ["ai"]],
+    ["¿Luna llena o cuartos?", "Las guías no se ponen de acuerdo. Una dice que la corvina come con más intensidad en luna llena y nueva; otra recomienda los cuartos para corvina. Prueba y anota tus resultados en Capturas.", ["pcm", "sm"]],
+  ]},
+  { t: "Según el oleaje y el agua", items: [
+    ["Olas medianas con espuma", "Es el escenario ideal en playas expuestas, con olas de menos de 2 m. El agua con espuma y algo turbia deja a los peces acercarse.", ["sm"]],
+    ["Mar calmo y agua clara", "Usa colores naturales (lomo azul, flancos plateados, panza blanca) y un líder de fluorocarbono de unos 80 cm, que casi no se ve.", ["sm"]],
+    ["Día nublado", "Funcionan los colores con contraste: morado, rosado y amarillo.", ["sm"]],
+    ["Mar grande", "Con olas de 2,5 m o más, la orilla no es segura. La app lo marca como «No recomendado».", []],
+  ]},
+  { t: "Dónde lanzar", items: [
+    ["Donde el agua se ve más oscura", "Busca las zonas con menos rompiente, donde se forman canales y pozones. Evita las partes de rompiente fuerte.", ["oo"]],
+    ["Playas de arena", "Con mucha pulga de mar: ahí se junta la corvina. Lanza detrás de la rompiente o a los pozones a unos 30 o 40 m de la orilla.", ["sm"]],
+    ["Bancos de arena y estructuras", "Ahí se concentra el lenguado.", ["dm"]],
+    ["Roqueríos con huirales", "Pintacha, pejeperro y vieja viven entre grietas, cuevas y bosques de algas.", ["tnc"]],
+    ["Muelles y rocas con agua en movimiento", "Rompientes, canales y corrientes: ahí se alimenta el jurel.", ["mj"]],
+  ]},
+];
+const TIPS_DULCE = [
+  { t: "Lo que cambia según la norma", items: [
+    ["Truchas, salmones y perca trucha", LEGAL_TRUCHA, ["sn"]],
+    ["Pejerrey (chileno y argentino)", "La carnada viva está permitida. Es la única de estas especies donde se puede usar.", ["sn"]],
+  ]},
+  { t: "Según la luz y el clima", items: [
+    ["Mañana temprano y final de la tarde", "Las truchas son más activas en las primeras horas del día y en las últimas de la tarde. Prefieren aguas frías y claras.", ["mb"]],
+    ["Lluvia", "Es mejor pescar en zonas protegidas del río o arroyo.", ["pc"]],
+    ["Viento fuerte", "Usa una caña más pesada para lanzar con más precisión.", ["pc"]],
+    ["Viento moderado (pejerrey)", "El viento oxigena el agua y arrastra comida hacia la orilla. Busca al pejerrey donde el viento se calma, o en la orilla donde rompe suave.", ["wp"]],
+    ["Calma total (pejerrey)", "Si la laguna queda lisa el pique baja. Baja la línea a media agua o al fondo hasta encontrar el cardumen.", ["wp"]],
+    ["Días calurosos", "El pejerrey argentino baja a capas más profundas.", ["sn"]],
+  ]},
+  { t: "Dónde buscar a los peces", items: [
+    ["Truchas en el río", "Corrientes moderadas y tramos medios de fondo pedregoso con algo de vegetación. Las zonas de corriente son buenas para las cucharillas.", ["sn", "mb"]],
+    ["Perca trucha", "Lagos y zonas bajas de los ríos, cerca de fondos pedregosos sin mucho fango y de corrientes.", ["sn"]],
+    ["Pejerrey argentino", "Aguas abiertas, mejor si están despejadas de vegetación, en embalses, tranques y lagunas.", ["sn"]],
+    ["Pejerrey chileno", "Aguas bien oxigenadas, transparentes, de poca corriente y con refugios de vegetación.", ["sn"]],
+  ]},
+];
+const CARNADAS_MAR = [
+  ["Machas", "Corvina. Es la carnada más recomendada.", ["sm", "oo"]],
+  ["Pulga de mar", "Corvina, en playas de arena donde abunda.", ["sm"]],
+  ["Camarón fantasma (nape)", "Corvina.", ["sm"]],
+  ["Sardina, anchoa o pejerrey", "Corvina; sierra y jurel (comen peces pequeños). El pejerrey salado de 10 a 15 cm es la carnada del lenguado.", ["sm", "dm", "cc", "pj"]],
+  ["Jibia (calamar)", "Su olor fuerte sirve de noche. También baunco y trozos para corvina.", ["pcm", "sm2", "sm"]],
+  ["Cangrejo o jaiba sin caparazón", "Vieja (su favorita), pintacha, rollizo y baunco. También corvina.", ["vm", "tnc", "sm2", "sm"]],
+  ["Erizo", "Vieja, pintacha y pejeperro (es parte de su dieta).", ["vm", "tnc"]],
+  ["Piure", "Corvina.", ["sm"]],
+];
+const SENUELOS_MAR = [
+  ["Vinilos con jighead", "Corvina y pejeperro (con equipo de shore jigging de potencia media a alta).", ["sm", "sm2"]],
+  ["Jigs o chispas de 40 a 70 g", "Corvina. También jurel, bonito y sierra, con tirones cortos y rápidos.", ["sm", "mj"]],
+  ["Minnows y señuelos duros", "Corvina, con recuperación lenta y la línea tensa.", ["sm"]],
+  ["Señuelos negros con vibración", "Para la noche, con recuperación lenta cerca de la orilla.", ["pn", "ai"]],
+  ["Señuelos brillantes cerca de la superficie", "Jurel: responde a todo lo brillante y en movimiento.", ["pj"]],
+];
+const CARNADAS_DULCE = [
+  ["Lombriz pequeña", "Pejerrey; rinde mucho en tiempo frío.", ["wp"]],
+  ["Mojarra (pez pequeño)", "Pejerrey. Se permite la carnada viva.", ["wp", "sn"]],
+  ["Maíz dulce, masa, pan o papa hervida", "Carpa (no tiene medida específica en la planilla de Sernapesca). Se ceba la zona antes de pescar.", ["dp"]],
+  ["Truchas y perca trucha: sin carnada", "Solo señuelo artificial. Cucharillas números 1 a 3, minnows de hasta 7 cm y moscas.", ["sn", "mb"]],
+];
+
+/* Recomendación según el lugar, el día y la hora elegidos */
+function tipsHoy(spot, D, di, hora) {
+  const mar = esMar(spot), idx = di * 24 + hora, x = hora + 0.5, out = [], fecha = ymdDate(addDays(D.t0, di));
+  const toH = (s) => { const [a, b] = s.slice(11).split(":").map(Number); return a + b / 60; };
+  const sr = toH(D.w.sunrise[di]), ss = toH(D.w.sunset[di]);
+  const cre = Math.abs(x - sr) <= 1.25 || Math.abs(x - ss) <= 1.25, noche = x < sr - 0.5 || x > ss + 0.5;
+  const N = lunaNoche(addDays(D.t0, di), spot), ola = D.m ? D.m.wave_height[idx] : null, viento = D.w.wind[idx], temp = D.w.temp[idx];
+  const llevar = { carnada: [], senuelos: [] };
+  const add = (k, titulo, texto) => out.push({ k, titulo, texto });
+  if (mar) {
+    const S = D.m.sea_level_height_msl, v = S[idx + 1] != null && S[idx - 1] != null ? (S[idx + 1] - S[idx - 1]) / 2 : 0;
+    const pl = D.ext.filter(e => e.tipo === "Pleamar").map(e => Math.abs(e.t - x)).sort((a, b) => a - b)[0];
+    if (D.sinMarea) { add("info", "Sin predicción de marea", "No hay un mareógrafo confiable cerca de este lugar: guíate por la luz, el oleaje y la luna."); }
+    else if (pl != null && pl <= 2) { add("ok", "Estás cerca de la pleamar", "De 2 horas antes a 2 horas después es la ventana que recomiendan para corvina."); }
+    else if (v > 0.03) add("ok", "Marea subiendo", "Es el mejor momento general para pescar desde la orilla.");
+    else if (Math.abs(v) <= 0.03) add("warn", "Agua casi quieta (estoa)", "El pique suele bajar entre una marea y otra. Aprovecha para cambiar de lugar o armar el aparejo; el próximo cambio de marea es productivo.");
+    else add("warn", "Marea bajando", "Aprovecha para ubicar canales y pozones que se forman, y lánzales cuando vuelva a subir.");
+    const cf = coefMarea(D, di);
+    if (cf && cf.c >= 90) add("info", `Mareas vivas (coeficiente ${cf.c})`, "Hay más corriente: usa plomos con agarre, de pirámide o garra.");
+    if (ola != null) {
+      if (ola >= 2.5) add("bad", `Olas de ${ola.toFixed(1)} m`, "Con este mar la orilla no es segura. Mejor un lugar protegido o dejarlo para otro día.");
+      else if (ola >= 2) add("warn", `Olas de ${ola.toFixed(1)} m`, spot.tipo === "roquerío" ? "Mar movido: no te acerques al borde de las rocas, usa chaleco y calzado antideslizante. Pesca solo donde las olas no te alcancen." : "Pasan los 2 m que recomienda la guía para pescar desde la playa. Busca un lugar más protegido y lanza a los pozones.");
+      else if (ola >= 1.5) add("ok", `Olas de ${ola.toFixed(1)} m`, "Olas medianas con espuma: buen escenario en playas (menos de 2 m). Lanza a los canales y pozones, y detrás de la rompiente.");
+      else add("info", `Mar calmo (${ola.toFixed(1)} m)`, "Con agua clara usa colores naturales y un líder fino de fluorocarbono; los peces ven mejor.");
+    }
+    if (spot.tipo === "roquerío") { llevar.carnada.push("Cangrejo", "Jibia", "Erizo"); llevar.senuelos.push("Vinilos con jighead"); }
+    else { llevar.carnada.push("Machas", "Pulga de mar", "Sardina o pejerrey (para lenguado)"); llevar.senuelos.push("Vinilos con jighead", "Jigs de 40 a 70 g"); }
+  } else {
+    const t = salmonSeason(fecha, spot.region);
+    if (t.complejo) add("warn", "Truchas: temporada por cuerpo de agua", t.nota); else add(t.open ? "ok" : "bad", t.open ? "Temporada de truchas abierta" : "Truchas: fuera de temporada", t.open ? "Recuerda: solo señuelo artificial, plomada de máximo 100 g." : `La temporada abre el ${fmtD(t.next)}. Mientras tanto no se pueden pescar truchas ni salmones.`);
+    const pj = estado(SPMAP["pejerrey-ar"], fecha, spot.tipo);
+    add(pj.k, pj.k === "ok" ? "Pejerrey disponible" : "Pejerrey: " + pj.txt.toLowerCase(), pj.det);
+    if (viento != null) {
+      if (viento >= 30) add("bad", `Viento fuerte (${Math.round(viento)} km/h)`, "Difícil lanzar con precisión. Busca una zona protegida o usa una caña más pesada.");
+      else if (viento >= 6) add("ok", `Viento moderado (${Math.round(viento)} km/h)`, "Oxigena el agua y arrastra comida a la orilla. Prueba donde el viento se calma o donde rompe suave (pejerrey).");
+      else add("warn", "Poco viento", "Con el agua lisa el pique del pejerrey baja. Baja la línea a media agua o al fondo hasta encontrar el cardumen.");
+    }
+    if (temp != null && temp >= 26) add("info", `Calor (${Math.round(temp)}°)`, "El pejerrey argentino baja a capas más profundas.");
+    if (spot.tipo === "río") { llevar.senuelos.push("Cucharillas números 1 a 3", "Minnows de hasta 7 cm", "Moscas"); }
+    else { llevar.carnada.push("Lombriz pequeña", "Mojarra"); llevar.senuelos.push("Jigs pequeños (pejerrey)", "Cucharillas (trucha, cuando abra la temporada)"); }
+  }
+  if (cre) add("ok", "Amanecer o atardecer", mar ? "Son las horas más activas de todo el día (corvina y sierra). Colores naturales y recuperación lenta." : "Son las horas más activas del día: las truchas y el pejerrey comen mejor con poca luz.");
+  else if (noche) {
+    if (N.luz < 0.2) { add("info", "Noche oscura", "Pesca por olor: carnada con aroma fuerte, como la jibia. Si usas señuelo, que sea negro u oscuro y de vibración, con recuperación lenta. No alumbres el agua."); llevar.carnada.push("Jibia (olor fuerte)"); llevar.senuelos.push("Señuelos negros con vibración"); }
+    else { add("info", "Noche con luna", "Señuelos superficiales y de colores claros o reflectantes. De noche el lenguado se activa."); llevar.senuelos.push("Señuelos claros o reflectantes"); }
+    add("warn", "Seguridad", "Pesca acompañado, avisa dónde estás y a qué hora vuelves, y usa calzado antideslizante.");
+  } else add("info", "Pleno día", mar ? "Las horas fuertes son el amanecer y el atardecer. Si pescas ahora, busca el agua más oscura o con espuma y usa colores naturales." : "Las horas fuertes son la mañana temprano y el final de la tarde. Prefieren aguas frías y claras, en tramos de corriente moderada.");
+  return { out, llevar };
+}
+
+function vTips() {
+  const spot = SPOTS.find(s => s.id === st.spot), D = datos(spot), now = nowCL();
+  const esH = st.dia === idxHoy(D, now), hora = st.hora ?? (esH ? now.h : 9), mar = (st.tmedio || (esMar(spot) ? "mar" : "dulce")) === "mar";
+  const T = tipsHoy(spot, D, st.dia, hora), cuando = nombreDia(D, st.dia, now, false);
+  const chipK = { ok: "ok", warn: "warn", bad: "bad", info: "info" };
+  const lista = (a) => `<ul class="clean">${a.map(i => `<li><strong>${H(i[0])}.</strong> ${H(i[1])} ${(i[2] || []).map(k => `<a href="${TIPS_FUENTES[k][1]}" target="_blank" rel="noopener" class="small" title="${H(TIPS_FUENTES[k][0])}">[${H(TIPS_FUENTES[k][0].split(" · ")[0])}]</a>`).join(" ")}</li>`).join("")}</ul>`;
+  const gen = (mar ? TIPS_MAR : TIPS_DULCE).map(s => `<details><summary>${H(s.t)}</summary><div class="in">${lista(s.items)}</div></details>`).join("");
+  const carn = mar ? CARNADAS_MAR : CARNADAS_DULCE, sen = mar ? SENUELOS_MAR : [];
+  const especies = ESPECIES.filter(e => e.medio === (mar ? "mar" : "dulce")).map(e => { const est = estado(e, ymdDate(addDays(D.t0, st.dia)), esMar(spot) ? null : spot.tipo);
+    return `<details><summary><span>${H(e.nombre)} <span class="small muted">· ${H(e.sci)}</span></span><span class="chip ${est.k}" style="font-size:11px">${H(est.txt.split(" (")[0])}</span></summary><div class="in">${tipsEspecie(e)}<button type="button" class="back" data-sp="${e.id}" style="align-self:flex-start">Ver ficha de la especie</button></div></details>`; }).join("");
+  return `<div class="stack-lg view">
+    <section class="hero"><span class="label">Guía</span><h1>Tips de pesca</h1><p class="muted small">Qué señuelo o carnada usar según la marea, la luz y el agua, y qué atrae cada uno. Basado en las fichas de Sernapesca, la guía de The Nature Conservancy y pescadores chilenos.</p></section>
+    ${diasHTML(D, now)}
+    <section class="card stack">
+      <div class="sec-head"><div class="stack" style="gap:2px"><span class="label">${esH && st.hora == null ? "Ahora" : cuando + " a las " + String(hora).padStart(2, "0") + ":00"}</span><h2>${H(spot.nombre)}</h2></div><span class="chip info">${H(TIPO_NOMBRE[spot.tipo])}</span></div>
+      <div class="stack" style="gap:10px">${T.out.map(i => `<div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start"><span class="chip ${chipK[i.k]}" style="margin-top:2px;padding:3px 6px"></span><span><strong>${H(i.titulo)}.</strong> <span class="muted">${H(i.texto)}</span></span></div>`).join("")}</div>
+      ${T.llevar.carnada.length || T.llevar.senuelos.length ? `<div class="stack" style="gap:8px;border-top:1px solid var(--line);padding-top:12px"><span class="label">Qué llevar para esta salida</span>
+        ${T.llevar.carnada.length ? `<div class="tipfila"><span class="label">Carnada</span><span style="display:flex;flex-wrap:wrap;gap:6px">${[...new Set(T.llevar.carnada)].map(x => `<span class="tag">${H(x)}</span>`).join("")}</span></div>` : ""}
+        ${T.llevar.senuelos.length ? `<div class="tipfila"><span class="label">Señuelos</span><span style="display:flex;flex-wrap:wrap;gap:6px">${[...new Set(T.llevar.senuelos)].map(x => `<span class="tag">${H(x)}</span>`).join("")}</span></div>` : ""}</div>` : ""}
+      <p class="small muted">Se calcula con la marea, el sol, la luna, el oleaje y el viento del lugar y la hora que elegiste (cámbialos en Hoy o arriba).</p>
+    </section>
+    <div class="seg" role="group" aria-label="Tipo de agua" style="align-self:flex-start">${[["mar", "Mar"], ["dulce", "Agua dulce"]].map(([k, l]) => `<button type="button" data-tmedio="${k}" aria-pressed="${(mar ? "mar" : "dulce") === k}">${l}</button>`).join("")}</div>
+    <section class="stack"><h3>${mar ? "En el mar" : "En ríos, lagos y embalses"}</h3><div class="stack" style="gap:10px">${gen}</div></section>
+    <section class="stack"><h3>Qué atrae cada carnada</h3><div class="list">${carn.map(c => `<div class="src-item"><strong>${H(c[0])}</strong><span class="small muted">${H(c[1])} ${c[2].map(k => `<a href="${TIPS_FUENTES[k][1]}" target="_blank" rel="noopener">[${H(TIPS_FUENTES[k][0].split(" · ")[0])}]</a>`).join(" ")}</span></div>`).join("")}</div></section>
+    ${sen.length ? `<section class="stack"><h3>Qué atrae cada señuelo</h3><div class="list">${sen.map(c => `<div class="src-item"><strong>${H(c[0])}</strong><span class="small muted">${H(c[1])} ${c[2].map(k => `<a href="${TIPS_FUENTES[k][1]}" target="_blank" rel="noopener">[${H(TIPS_FUENTES[k][0].split(" · ")[0])}]</a>`).join(" ")}</span></div>`).join("")}</div></section>` : ""}
+    <section class="stack"><h3>Tips por especie</h3><div class="stack" style="gap:10px">${especies}</div></section>
+    <section class="callout info small"><strong>Son orientaciones, no garantías.</strong> Salen de guías y de la experiencia de pescadores, y cada pez y cada día es distinto. Lo legal (aparejos, carnada viva, vedas, tallas y cuotas) manda siempre: revisa la pestaña Normas. Las fuentes están enlazadas en cada tip.</section>
+  </div>`;
+}
+
 /* ---------- Render y eventos ---------- */
 function render() {
-  const v = { hoy: vHoy, mareas: vMareas, especies: vEspecies, capturas: vCapturas, normas: vNormas, fuentes: vFuentes }[st.tab];
+  ctx(SPOTS.find(s => s.id === st.spot)); actualizarEncabezado();
+  const v = { hoy: vHoy, mareas: vMareas, especies: vEspecies, capturas: vCapturas, tips: vTips, normas: vNormas, fuentes: vFuentes }[st.tab];
   const qEl = document.activeElement && document.activeElement.id === "q";
   const aviso = avisoActualizacion();
   $("#view").innerHTML = (aviso ? `<div style="margin-bottom:20px">${aviso}</div>` : "") + v();
@@ -1621,14 +1929,58 @@ function render() {
   if (qEl) { const q = $("#q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
   if (st.tab === "capturas") mostrarUso();
 }
-function initSpots() {
-  const groups = [["Mar", SPOTS.filter(esMar)], ["Ríos, lagos y embalses", SPOTS.filter(s => !esMar(s))]];
-  $("#spot").innerHTML = groups.map(([g, l]) => `<optgroup label="${g}">${l.map(s => `<option value="${s.id}">${H(s.nombre)}</option>`).join("")}</optgroup>`).join("");
-  $("#spot").value = st.spot;
+function actualizarEncabezado() { const sp = SPOTS.find(s => s.id === st.spot); if (sp) $("#spot-nombre").textContent = sp.nombre; }
+/* ---------- Elegir lugar: cualquier punto de Chile, de Arica a Magallanes ---------- */
+const LUG = { q: "", medio: "todos" };
+const normTxt = (t) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const distKm = (a, b, c, d) => { const r = Math.PI / 180, dp = (c - a) * r, dl = (d - b) * r; const h = Math.sin(dp / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin(dl / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
+function seleccionarLugar(id) {
+  const sp = SPOTS.find(s => s.id === id); if (!sp) return;
+  st.spot = id; save(); ctx(sp); st.medio = esMar(sp) ? "mar" : "dulce"; st.tmedio = null; st.hora = null;
+  st.dia = idxHoy(datos(sp), nowCL()) ?? 0;
+  cerrarFicha(); render(); cargarVivo(sp);
+}
+function abrirLugares() {
+  mostrarSheet(`${btnVolver("data-close", "Cerrar")}
+    <div class="stack" style="gap:6px"><span class="label">Lugar de pesca</span><h1 style="font-size:28px">¿Dónde pescas?</h1>
+      <p class="muted small">Elige cualquier lugar de Chile, de Arica a Magallanes. No tiene que ser donde estás ahora.</p></div>
+    <label class="search">${svgI('<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>', 18)}<input id="lug-q" type="search" placeholder="Busca un lugar o una región" autocomplete="off" aria-label="Buscar lugar"></label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <div class="seg" role="group" aria-label="Tipo de lugar">${[["todos", "Todos"], ["mar", "Mar"], ["dulce", "Agua dulce"]].map(([k, l]) => `<button type="button" data-lug-medio="${k}" aria-pressed="${LUG.medio === k}">${l}</button>`).join("")}</div>
+      <button type="button" class="back" data-lug-geo>${svgI('<path d="M12 21s7-6.2 7-11a7 7 0 0 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>', 18)}Cerca de mí</button></div>
+    <div id="lug-msg" class="callout small info" hidden></div>
+    <div id="lug-lista" class="stack" style="gap:10px"></div>`);
+  const q = $("#lug-q"); q.value = LUG.q; pintarLugares();
+  q.addEventListener("input", (e) => { LUG.q = e.target.value; pintarLugares(); });
+}
+function pintarLugares() {
+  const el = $("#lug-lista"); if (!el) return;
+  const q = normTxt(LUG.q.trim()), actual = SPOTS.find(s => s.id === st.spot);
+  const ok = (s) => (LUG.medio === "todos" || (LUG.medio === "mar") === esMar(s)) && (!q || normTxt(s.nombre + " " + s.region).includes(q));
+  const html = (SNAP.regiones || []).map(r => {
+    const l = SPOTS.filter(s => s.region === r && ok(s)); if (!l.length) return "";
+    return `<details ${q || (actual && actual.region === r) ? "open" : ""}><summary><span>${H(r)} <span class="small muted num">· ${l.length}</span></span></summary><div class="in" style="padding:0"><div class="list" style="border:0;border-top:1px solid var(--line);border-radius:0">${l.map(s => `<button type="button" class="row" data-lugar="${s.id}"><span class="txt"><strong>${H(s.nombre)}</strong><span>${H(TIPO_NOMBRE[s.tipo])}</span></span>${s.id === st.spot ? '<span class="chip ok">Elegido</span>' : ""}</button>`).join("")}</div></div></details>`;
+  }).join("");
+  el.innerHTML = html || `<p class="muted">No encontramos ese lugar. Prueba con el nombre de la ciudad o de la región.</p>`;
+}
+function cercaDeMi() {
+  const msg = $("#lug-msg"), say = (t, k = "info") => { msg.className = "callout small " + k; msg.innerHTML = t; msg.hidden = false; };
+  if (!navigator.geolocation) return say("Este navegador no permite ubicarte. Elige el lugar en la lista.", "warn");
+  say("Buscando tu ubicación…");
+  navigator.geolocation.getCurrentPosition((pos) => {
+    const { latitude: la, longitude: lo } = pos.coords;
+    const c = SPOTS.map(s => ({ s, d: distKm(la, lo, s.lat, s.lon) })).filter(x => LUG.medio === "todos" || (LUG.medio === "mar") === esMar(x.s)).sort((a, b) => a.d - b.d)[0];
+    if (!c) return say("No encontramos lugares con ese filtro.", "warn");
+    say(`El lugar más cercano es <strong>${H(c.s.nombre)}</strong>, a ${Math.round(c.d)} km.${c.d > 150 ? " Está lejos: puede que tu zona no esté en la lista." : ""} <button type="button" class="back" data-lugar="${c.s.id}" style="margin-top:8px">Ir a ${H(c.s.nombre)}</button>`);
+  }, () => say("No pudimos obtener tu ubicación. Revisa el permiso de ubicación o elige el lugar en la lista.", "warn"), { timeout: 12000, maximumAge: 600000 });
 }
 document.addEventListener("click", (ev) => {
-  const t = ev.target.closest("[data-tab],[data-go],[data-sp],[data-dia],[data-hora],[data-medio],[data-close],[data-car],[data-lic],[data-lic-save],[data-lic-del],[data-lic-del-ok],[data-lic-del-no],[data-cap-new],[data-cap],[data-cap-share],[data-cap-dl],[data-cap-del],[data-cap-del-ok],[data-cap-backup],[data-foto-quitar],[data-instalar],[data-carp-new],[data-carp],[data-carp-save],[data-carp-edit],[data-carp-del],[data-carp-del-todo],[data-carp-del-solo],[data-carp-share],[data-carp-dl],[data-foto],[data-foto-share],[data-foto-dl],[data-foto-del],[data-foto-del-ok],[data-actualizar],[data-buscar-act],[data-ruleta],[data-girar],[data-permiso-share]"); if (!t) return;
+  const t = ev.target.closest("[data-tab],[data-go],[data-sp],[data-dia],[data-hora],[data-medio],[data-close],[data-car],[data-lic],[data-lic-save],[data-lic-del],[data-lic-del-ok],[data-lic-del-no],[data-cap-new],[data-cap],[data-cap-share],[data-cap-dl],[data-cap-del],[data-cap-del-ok],[data-cap-backup],[data-foto-quitar],[data-instalar],[data-carp-new],[data-carp],[data-carp-save],[data-carp-edit],[data-carp-del],[data-carp-del-todo],[data-carp-del-solo],[data-carp-share],[data-carp-dl],[data-foto],[data-foto-share],[data-foto-dl],[data-foto-del],[data-foto-del-ok],[data-actualizar],[data-buscar-act],[data-ruleta],[data-girar],[data-permiso-share],[data-tmedio],[data-lugares],[data-lugar],[data-lug-medio],[data-lug-geo]"); if (!t) return;
   const d = t.dataset;
+  if (d.lugares !== undefined) return abrirLugares();
+  if (d.lugar) return seleccionarLugar(d.lugar);
+  if (d.lugMedio) { LUG.medio = d.lugMedio; return abrirLugares(); }
+  if (d.lugGeo !== undefined) return cercaDeMi();
   if (d.ruleta !== undefined) return abrirRuleta();
   if (d.girar !== undefined) return girarRuleta();
   if (d.permisoShare !== undefined) return compartirPermiso();
@@ -1677,16 +2029,12 @@ document.addEventListener("click", (ev) => {
   if (t.dataset.dia) { st.dia = +t.dataset.dia; st.hora = null; }
   if (t.dataset.hora) st.hora = t.dataset.hora === "ahora" ? null : +t.dataset.hora;
   if (t.dataset.medio) { st.medio = t.dataset.medio; st.q = ""; }
+  if (t.dataset.tmedio) st.tmedio = t.dataset.tmedio;
   render();
 });
 document.addEventListener("input", (ev) => { if (ev.target.id === "q") { st.q = ev.target.value; render(); } });
 document.addEventListener("change", (ev) => { if (ev.target.id === "cap-restore" && ev.target.files[0]) restaurarCopia(ev.target.files[0]); });
 document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && !$("#sheet").hidden) cerrarFicha(); });
-$("#spot").addEventListener("change", (ev) => {
-  st.spot = ev.target.value; save();
-  const sp = SPOTS.find(s => s.id === st.spot); st.medio = esMar(sp) ? "mar" : "dulce";
-  render(); cargarVivo(sp);
-});
 
 // Tema: sistema → claro → oscuro
 const THEMES = ["system", "light", "dark"];
@@ -1700,8 +2048,7 @@ function applyTheme() {
 $("#theme").addEventListener("click", () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % 3]; try { localStorage.setItem("myv-theme", theme); } catch (e) {} applyTheme(); });
 
 const h0 = (location.hash || "").slice(1); if (TABS.some(t => t[0] === h0) || h0 === "fuentes") st.tab = h0;
-{ const sp = SPOTS.find(s => s.id === st.spot); st.medio = esMar(sp) ? "mar" : "dulce"; }
-{ const sp = SPOTS.find(s => s.id === st.spot); st.dia = idxHoy(datos(sp), nowCL()) ?? 0; }
+{ const sp = SPOTS.find(s => s.id === st.spot); ctx(sp); st.medio = esMar(sp) ? "mar" : "dulce"; st.dia = idxHoy(datos(sp), nowCL()) ?? 0; }
 /* ---------- Actualizaciones: compara esta versión con version.json publicado en GitHub ---------- */
 const APP_VERSION = "__APP_VERSION__";
 const ACT = { estado: "", nueva: null }; // estado: "", "buscando", "nueva", "al-dia", "sin-conexion", "actualizando"
@@ -1760,5 +2107,5 @@ async function instalar() { if (!PROMPT_INSTALAR) return; PROMPT_INSTALAR.prompt
 let ultimaRevision = 0;
 const revisar = () => { if (navigator.onLine !== false && Date.now() - ultimaRevision > 30 * 60e3) { ultimaRevision = Date.now(); buscarActualizacion(false); } };
 document.addEventListener("visibilitychange", () => { if (!document.hidden) revisar(); });
-initSpots(); applyTheme(); render(); licCargar(); capCargar(); anuncioCargar(); revisar(); cargarVivo(SPOTS.find(s => s.id === st.spot));
+actualizarEncabezado(); applyTheme(); render(); licCargar(); capCargar(); anuncioCargar(); revisar(); cargarVivo(SPOTS.find(s => s.id === st.spot));
 </script>

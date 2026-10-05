@@ -1,6 +1,6 @@
 # jPique
 
-App gratuita para pesca recreativa en la zona central de Chile: mareas, vedas, tallas, cuotas, actividad de peces, luna, bitácora de capturas con carpetas y licencia de pesca. Se instala en el celular desde el navegador y funciona sin señal.
+App gratuita para pesca recreativa en todo Chile, de Arica a Magallanes: mareas, vedas, tallas, cuotas, actividad de peces, luna, bitácora de capturas con carpetas y licencia de pesca. Se instala en el celular desde el navegador y funciona sin señal.
 
 ## Cómo se actualiza
 
@@ -31,7 +31,8 @@ Luego abre http://localhost:5179 (o, desde el celular en la misma red Wi-Fi, la 
 | Qué | Cuándo | Cómo |
 |---|---|---|
 | Vedas, tallas y cuotas | Una vez al mes | Revisar la planilla de Sernapesca y editar `ESPECIES` en `app/src/index.template.html` |
-| Tabla de mareas | Antes de 2030 | `pip install utide numpy` y `python app/src/mareas_valparaiso.py` |
+| Tabla de mareas | Antes de 2029 | `pip install utide numpy` y `python app/src/mareas_chile.py` |
+| Lugares de pesca | Cuando quieras agregar uno | Editar `app/src/lugares.py` (nombre, región, tipo y coordenadas); el resto se asigna solo |
 | Registro de fuentes | Si cambian las fotos | `python app/src/registro_fuentes.py` |
 
 ## Costo
