@@ -196,6 +196,7 @@ details > .in { padding: 0 16px 16px; display: flex; flex-direction: column; gap
 .tabs button[aria-current="page"] { color: var(--fg); }
 .tabs button[aria-current="page"] svg { color: var(--accent); }
 .foot { font-size: 12px; color: var(--muted); padding-block: 24px 8px; }
+@keyframes confeti { to { transform: translateY(340px) rotate(540deg); opacity: 0; } }
 @media (prefers-reduced-motion: no-preference) {
   .view { animation: fade .18s ease-out; }
   @keyframes fade { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: none; } }
@@ -1509,22 +1510,9 @@ async function restaurarCopia(file) {
   } catch (e) { avisoCap("Ese archivo no es una copia de jPique. Elige el .zip que descargaste desde esta pantalla.", "bad"); }
 }
 
-/* ---------- Ruleta: ¿salgo a pescar? (15 % de probabilidad, intentos infinitos) ---------- */
-const RUL_PROB = 0.15, RUL_N = 20, RUL_GANAN = [1, 8, 15]; // 3 de 20 casillas = 15 %
-const RUL = { n: 0, rot: 0, girando: false, victorias: 0 };
-const RUL_NO = [
-  "Ella dice que no. Respira, y gira otra vez.",
-  "«Primero la loza, después el mar.» Otra vuelta.",
-  "Hoy toca supermercado. La ruleta te entiende, pero no te suelta: gira de nuevo.",
-  "No salió. Tus carretes siguen esperando, la ruleta también.",
-  "Casi. Dicen que la insistencia es una virtud de pescador.",
-  "El pez no se va a ningún lado. Tú tampoco: otra vuelta.",
-  "Negociación en curso… ofrece lavar los platos y gira otra vez.",
-  "Hoy no toca, campeón. Pero la ruleta no cobra: intentos infinitos.",
-  "Esta vez la suerte miró para otro lado. Gira de nuevo.",
-  "Un «no» más y la próxima sale. Eso dice la estadística (más o menos).",
-];
-const RUL_SI = "¡Vamos campeón! Sale a pescar, nadie te para hoy.";
+/* ---------- Ruleta: ¿salgo a pescar? Se ve difícil (3 casillas de 20), pero hoy siempre es tu día ---------- */
+const RUL_N = 20, RUL_GANAN = [1, 8, 15];
+const RUL = { n: 0, rot: 0, girando: false };
 function azar() { try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; } catch (e) { return Math.random(); } }
 
 // Cuántos peces pide la ruleta según las condiciones de hoy (actividad, estado del mar, mareas vivas)
@@ -1556,12 +1544,12 @@ function ruletaSVG() {
 function ruletaCard() {
   return `<button type="button" class="row card" data-ruleta style="border:1px solid var(--line);border-radius:var(--r);gap:14px">
     <span class="dot-big warn" style="width:40px;height:40px;background:var(--accent-soft);color:var(--accent)">${svgI('<circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4M12 12 5.5 16"/>', 20)}</span>
-    <span class="txt"><strong>La ruleta: ¿salgo a pescar?</strong><span style="white-space:normal">Gira y que decida la suerte. Intentos infinitos.</span></span><span style="color:var(--accent)">→</span></button>`;
+    <span class="txt"><strong>La ruleta: ¿salgo a pescar?</strong><span style="white-space:normal">Gira y consigue tu permiso supremo.</span></span><span style="color:var(--accent)">→</span></button>`;
 }
 function abrirRuleta() {
   mostrarSheet(`${btnVolver("data-close", "Volver")}
     <div class="stack" style="gap:6px"><span class="label">Juego</span><h1 style="font-size:28px">¿Salgo a pescar?</h1>
-      <p class="muted small">Gira la ruleta. Tiene un 15 % de probabilidad de ganar (3 casillas de 20) y puedes girar todas las veces que quieras.</p></div>
+      <p class="muted small">Gira la ruleta. Probabilidad oficial de ganar: 15 % (3 casillas de 20). Intentos infinitos. Estadísticamente, hoy es tu día.</p></div>
     ${ruletaSVG()}
     <button type="button" class="back" data-girar id="rul-btn" ${BTN_FUERTE}>Girar la ruleta</button>
     <p class="small muted" style="text-align:center" id="rul-cont"></p>
@@ -1570,39 +1558,56 @@ function abrirRuleta() {
 }
 function actualizarRuletaCont() {
   const el = $("#rul-cont"); if (!el) return;
-  el.textContent = RUL.n ? `Intentos: ${RUL.n} · Veces que te dejaron salir: ${RUL.victorias}` : "Todavía no has girado.";
+  el.textContent = RUL.n ? `Intentos: ${RUL.n} · Permisos supremos conseguidos: ${RUL.n}` : "Todavía no has girado.";
 }
 function girarRuleta() {
   if (RUL.girando) return; RUL.girando = true;
-  const gana = azar() < RUL_PROB, pool = [...Array(RUL_N).keys()].filter(i => RUL_GANAN.includes(i) === gana);
-  const i = pool[Math.floor(azar() * pool.length)], paso = 360 / RUL_N;
+  const i = RUL_GANAN[Math.floor(azar() * RUL_GANAN.length)], paso = 360 / RUL_N;
   const objetivo = -(i * paso + paso / 2 + (azar() - 0.5) * paso * 0.6), delta = (((objetivo - RUL.rot) % 360) + 360) % 360;
-  const reducido = matchMedia("(prefers-reduced-motion: reduce)").matches, ms = reducido ? 500 : 4200;
-  RUL.rot += 360 * (reducido ? 1 : 5 + Math.floor(azar() * 3)) + delta; RUL.n++;
+  const reducido = matchMedia("(prefers-reduced-motion: reduce)").matches, ms = reducido ? 500 : 5200;
+  RUL.rot += 360 * (reducido ? 1 : 6 + Math.floor(azar() * 3)) + delta; RUL.n++;
   const rueda = $("#rul-rueda"), btn = $("#rul-btn"), res = $("#rul-res");
   if (res) res.innerHTML = ""; if (btn) { btn.disabled = true; btn.textContent = "Girando…"; }
   if (rueda) { rueda.style.transition = `transform ${ms}ms cubic-bezier(.12,.6,.1,1)`; rueda.style.transform = `rotate(${RUL.rot}deg)`; }
   setTimeout(() => {
-    RUL.girando = false; if (gana) RUL.victorias++;
+    RUL.girando = false;
     const b = $("#rul-btn"), r = $("#rul-res"); if (!b || !r) return;
     b.disabled = false; b.textContent = "Girar otra vez"; actualizarRuletaCont();
-    r.innerHTML = gana ? ruletaGano() : `<div class="callout warn"><strong>No esta vez.</strong><br>${H(RUL_NO[Math.floor(azar() * RUL_NO.length)])}</div>`;
-    if (gana) { try { navigator.vibrate && navigator.vibrate([80, 60, 160]); } catch (e) {} }
+    r.innerHTML = permisoSupremo();
+    try { navigator.vibrate && navigator.vibrate([80, 60, 160, 60, 240]); } catch (e) {}
+    r.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   }, ms + 80);
 }
-function ruletaGano() {
-  const C = ruletaCondiciones(), peces = 1 + Math.floor(azar() * C.max), seguro = C.em.k !== "bad";
-  return `<div class="stack" style="gap:12px">
-    <div class="callout" style="background:var(--ok-soft);color:var(--ok);font-size:17px;font-weight:600;text-wrap:balance">${RUL_SI}</div>
+const CONFETI = ["var(--accent)", "var(--ok)", "var(--sea)", "var(--warn)", "var(--moon)"];
+function confetiHTML() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return "";
+  return `<span aria-hidden="true" style="position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:inherit">${[...Array(36)].map(() =>
+    `<i style="position:absolute;top:-10px;left:${(azar() * 100).toFixed(1)}%;width:${(5 + azar() * 6).toFixed(1)}px;height:${(8 + azar() * 8).toFixed(1)}px;background:${CONFETI[Math.floor(azar() * CONFETI.length)]};border-radius:2px;opacity:.9;animation:confeti ${(2.2 + azar() * 2).toFixed(2)}s ${(azar() * 0.9).toFixed(2)}s ease-in forwards"></i>`).join("")}</span>`;
+}
+function permisoSupremo() {
+  const C = ruletaCondiciones(), peces = 1 + Math.floor(azar() * C.max), seguro = C.em.k !== "bad", hoy = nowCL().ymd;
+  return `<div class="stack" style="gap:14px">
+    <section style="position:relative;border:2px solid var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:22px 18px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center">
+      ${confetiHTML()}
+      <span class="label" style="color:var(--accent)">¡Vamos campeón!</span>
+      <h2 style="font-size:30px;line-height:1.05;letter-spacing:.01em">PERMISO SUPREMO<br>DE PESCA</h2>
+      <p style="font-family:var(--font-display);font-size:19px;font-weight:700;line-height:1.25;text-wrap:balance">TIENES PERMISO SOBRE TODOS PARA IR A PESCAR.<br>VAMOS, TÚ PUEDES.</p>
+      <p class="small" style="text-wrap:balance">Sale a pescar, nadie te para hoy. Válido en ${H(C.spot.nombre)}, sin apelación y con efecto inmediato.</p>
+      <p class="small muted num">Emitido por la ruleta · ${H(fechaCorta(hoy))}</p>
+    </section>
     <div class="card stack" style="align-items:center;text-align:center;gap:4px">
       <span class="label">Hoy la casa te espera con</span>
       <b class="num" style="font-size:56px;font-weight:500;line-height:1">${peces}</b>
       <strong>${peces === 1 ? "pez" : "peces"} para la mesa</strong>
       <span class="small muted" style="margin-top:6px">El número sale al azar entre 1 y ${C.max}, según lo de hoy en ${H(C.spot.nombre)}: actividad de peces <b>${H(C.A.nivel.txt.toLowerCase())}</b>, mar <b>${H(C.em.txt.toLowerCase())}</b>${C.cf && C.cf.c >= 90 ? ", mareas vivas" : ""} (a las ${C.hora}).</span>
     </div>
-    ${seguro ? "" : `<div class="callout bad small"><strong>Ojo con el mar.</strong> La ruleta dijo que sí, pero hoy el mar está para quedarse en tierra. Pesca solo desde un lugar seguro y alejado de las olas.</div>`}
-    <p class="small muted">Es un juego: la cantidad no es una obligación. Respeta siempre la talla mínima, la cuota por jornada y las vedas, y devuelve vivo lo que no corresponda llevarse (${esMar(C.spot) ? "en el mar el total no puede pasar de 10 ejemplares" : "revisa la cuota de cada especie"}).</p>
+    ${navigator.share ? `<button type="button" class="back" data-permiso-share style="align-self:stretch;justify-content:center;padding:12px">${svgI(ICO.compartir, 18)}Mostrar el permiso a quien corresponda</button>` : ""}
+    ${seguro ? "" : `<div class="callout bad small"><strong>Ojo con el mar.</strong> El permiso es supremo, pero el mar de hoy no. Pesca solo desde un lugar seguro y alejado de las olas.</div>`}
+    <p class="small muted">Es un juego: la cantidad no es una obligación. Respeta siempre la talla mínima, la cuota por jornada y las vedas, y devuelve vivo lo que no corresponda llevarse (${esMar(C.spot) ? "en el mar el total no puede pasar de 10 ejemplares" : "revisa la cuota de cada especie"}). Y la licencia de pesca sigue siendo obligatoria.</p>
   </div>`;
+}
+async function compartirPermiso() {
+  try { await navigator.share({ title: "Permiso Supremo de Pesca", text: "PERMISO SUPREMO DE PESCA: tienes permiso sobre todos para ir a pescar. Vamos, tú puedes. (jPique)" }); } catch (e) {}
 }
 
 /* ---------- Render y eventos ---------- */
@@ -1622,10 +1627,11 @@ function initSpots() {
   $("#spot").value = st.spot;
 }
 document.addEventListener("click", (ev) => {
-  const t = ev.target.closest("[data-tab],[data-go],[data-sp],[data-dia],[data-hora],[data-medio],[data-close],[data-car],[data-lic],[data-lic-save],[data-lic-del],[data-lic-del-ok],[data-lic-del-no],[data-cap-new],[data-cap],[data-cap-share],[data-cap-dl],[data-cap-del],[data-cap-del-ok],[data-cap-backup],[data-foto-quitar],[data-instalar],[data-carp-new],[data-carp],[data-carp-save],[data-carp-edit],[data-carp-del],[data-carp-del-todo],[data-carp-del-solo],[data-carp-share],[data-carp-dl],[data-foto],[data-foto-share],[data-foto-dl],[data-foto-del],[data-foto-del-ok],[data-actualizar],[data-buscar-act],[data-ruleta],[data-girar]"); if (!t) return;
+  const t = ev.target.closest("[data-tab],[data-go],[data-sp],[data-dia],[data-hora],[data-medio],[data-close],[data-car],[data-lic],[data-lic-save],[data-lic-del],[data-lic-del-ok],[data-lic-del-no],[data-cap-new],[data-cap],[data-cap-share],[data-cap-dl],[data-cap-del],[data-cap-del-ok],[data-cap-backup],[data-foto-quitar],[data-instalar],[data-carp-new],[data-carp],[data-carp-save],[data-carp-edit],[data-carp-del],[data-carp-del-todo],[data-carp-del-solo],[data-carp-share],[data-carp-dl],[data-foto],[data-foto-share],[data-foto-dl],[data-foto-del],[data-foto-del-ok],[data-actualizar],[data-buscar-act],[data-ruleta],[data-girar],[data-permiso-share]"); if (!t) return;
   const d = t.dataset;
   if (d.ruleta !== undefined) return abrirRuleta();
   if (d.girar !== undefined) return girarRuleta();
+  if (d.permisoShare !== undefined) return compartirPermiso();
   if (d.instalar !== undefined) return instalar();
   if (d.actualizar !== undefined) return actualizarApp();
   if (d.buscarAct !== undefined) return buscarActualizacion(true);
