@@ -1,0 +1,11 @@
+# Documentos internos del proyecto (no se publican)
+*.docx
+*.pdf
+
+# Configuración local de Claude
+.claude/
+
+# Archivos que se generan solos
+__pycache__/
+app/publicar.html
+_site/

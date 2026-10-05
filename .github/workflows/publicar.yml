@@ -1,0 +1,52 @@
+# Publica la app en GitHub Pages (gratis) cada vez que se sube un cambio,
+# y todos los días a las 06:15 de Chile para guardar el pronóstico del día dentro de la app.
+name: Publicar app
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "15 9 * * *"   # 09:15 UTC = 06:15 en Chile (horario de verano)
+  workflow_dispatch:        # botón «Run workflow» en la pestaña Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Armar la app con el pronóstico del día
+        # Si MET Norway o NOAA no responden, se publica con el último pronóstico guardado
+        run: python app/src/construir.py || python app/src/construir.py --offline
+
+      - name: Preparar el sitio
+        run: |
+          mkdir _site
+          cp -r app/* _site/
+          rm -rf _site/src _site/publicar.html
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

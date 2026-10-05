@@ -1,0 +1,1652 @@
+<title>jPique</title>
+<meta name="description" content="Mareas, vedas, tallas y cuotas para pesca recreativa en la zona central de Chile.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: una columna tipo teléfono (máx. 520px), barra de pestañas fija abajo; tarjetas solo donde hay un dato que decidir. */
+:root {
+  --bg: #f4f6f7;
+  --surface: #ffffff;
+  --line: #dde3e6;
+  --fg: #142026;
+  --muted: #5b6b73;
+  --accent: #d9531e;      /* naranjo boya */
+  --accent-soft: #fbe6dc;
+  --sea: #1f6f8b;
+  --sea-soft: #d8eaf1;
+  --ok: #1d7a4a;  --ok-soft: #dcf1e5;
+  --warn: #9a6700; --warn-soft: #fbefcf;
+  --bad: #b42318;  --bad-soft: #fbe1de;
+  --font-display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", Roboto, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --r: 14px;
+  --moon: #ece4c3; /* luna iluminada: el mismo tono en ambos temas */
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1418; --surface: #152027; --line: #24333b; --fg: #e6edf0; --muted: #8fa1a9;
+    --accent: #ff7a45; --accent-soft: #3a2218; --sea: #5fb4d3; --sea-soft: #15303b;
+    --ok: #4fc483; --ok-soft: #12301f; --warn: #e7b445; --warn-soft: #33290f; --bad: #ff7b6e; --bad-soft: #3b1714;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1418; --surface: #152027; --line: #24333b; --fg: #e6edf0; --muted: #8fa1a9;
+  --accent: #ff7a45; --accent-soft: #3a2218; --sea: #5fb4d3; --sea-soft: #15303b;
+  --ok: #4fc483; --ok-soft: #12301f; --warn: #e7b445; --warn-soft: #33290f; --bad: #ff7b6e; --bad-soft: #3b1714;
+  color-scheme: dark;
+}
+:root[data-theme="light"] { color-scheme: light; }
+
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--font-body); font-size: 15px; line-height: 1.5; margin: 0; -webkit-font-smoothing: antialiased; }
+.app { max-width: 520px; margin: 0 auto; padding-inline: 16px; padding-block: 0 calc(84px + env(safe-area-inset-bottom, 0px)); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 22px; font-weight: 700; }
+h3 { font-size: 16px; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--sea); text-underline-offset: 2px; }
+button, select, input, textarea { font: inherit; color: inherit; }
+/* Celular: sin zoom al escribir (iOS lo hace con letra menor a 16px), sin destello gris al tocar */
+input, select, textarea { font-size: 16px !important; }
+html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
+.tabs, .days, .seg, .back { -webkit-user-select: none; user-select: none; }
+button, label.back { touch-action: manipulation; }
+textarea.search, input.search, select.search { width: 100%; padding: 10px 14px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.label { font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.stack-lg { display: flex; flex-direction: column; gap: 28px; }
+
+/* Encabezado */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 14px 10px; display: flex; align-items: center; gap: 10px; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.brand svg { color: var(--accent); }
+.spot { flex: 1; min-width: 0; }
+.spot select { width: 100%; appearance: none; background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23889' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 12px center; border: 1px solid var(--line); border-radius: 999px; padding: 8px 32px 8px 14px; font-size: 14px; font-weight: 500; text-overflow: ellipsis; }
+.icon-btn { flex: none; width: 38px; height: 38px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; cursor: pointer; }
+
+/* Tarjetas y chips */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip.ok { color: var(--ok); background: var(--ok-soft); }
+.chip.warn { color: var(--warn); background: var(--warn-soft); }
+.chip.bad { color: var(--bad); background: var(--bad-soft); }
+.chip.info { color: var(--sea); background: var(--sea-soft); }
+.data-badge { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+.data-badge i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex: none; }
+.data-badge.live i { background: var(--ok); }
+
+/* Hoy */
+.hero { padding-block: 6px 0; display: flex; flex-direction: column; gap: 6px; }
+.hero h1 { font-size: 30px; line-height: 1.1; font-weight: 700; }
+.verdict { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.dot-big { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; }
+.dot-big.ok { background: var(--ok-soft); color: var(--ok); }
+.dot-big.warn { background: var(--warn-soft); color: var(--warn); }
+.dot-big.bad { background: var(--bad-soft); color: var(--bad); }
+.metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border-radius: 10px; overflow: hidden; margin-top: 14px; }
+.metric { background: var(--surface); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.metric b { font-family: var(--font-data); font-weight: 500; font-size: 17px; }
+.metric span { font-size: 12px; color: var(--muted); }
+.tide-next { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tide-next .card { padding: 14px; }
+.tide-next b { font-family: var(--font-data); font-size: 22px; font-weight: 500; display: block; }
+.list { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--line); background: none; border-left: 0; border-right: 0; border-bottom: 0; text-align: left; width: 100%; cursor: pointer; }
+.row:first-child { border-top: 0; }
+.row:hover { background: var(--bg); }
+.row .thumb { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex: none; background: var(--sea-soft); }
+.row .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.row .txt strong { font-weight: 600; }
+.row .txt span { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+
+/* Mareas */
+.days { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.days button { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 8px 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; min-width: 54px; }
+.days button small { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.days button b { font-family: var(--font-data); font-weight: 500; font-size: 16px; }
+.days button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.days button[aria-pressed="true"] small { color: var(--bg); opacity: 0.75; }
+.chart { width: 100%; height: auto; display: block; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tbl th { text-align: left; font-weight: 600; font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+.tbl td { padding: 10px 6px; border-bottom: 1px solid var(--line); }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl .r { text-align: right; }
+.scroll-x { overflow-x: auto; }
+.hours { display: grid; grid-auto-flow: column; grid-auto-columns: 52px; gap: 0; overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.hours div { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; border-left: 1px solid var(--line); font-size: 12px; }
+.hours div:first-child { border-left: 0; }
+.hours b { font-family: var(--font-data); font-weight: 500; font-size: 13px; }
+.bar-w { width: 8px; border-radius: 3px; background: var(--sea); }
+
+/* Especies */
+.search { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px; }
+.search input { border: 0; background: none; outline: none; flex: 1; min-width: 0; font-size: 15px; }
+.seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: none; padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.sp { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; cursor: pointer; text-align: left; padding: 0; display: flex; flex-direction: column; }
+.sp:hover { border-color: var(--muted); }
+.ph { aspect-ratio: 4 / 3; width: 100%; max-width: 100%; object-fit: cover; display: block; background: var(--sea-soft); }
+.ph-empty { aspect-ratio: 4 / 3; width: 100%; display: grid; place-items: center; background: var(--sea-soft); color: var(--sea); font-size: 12px; text-align: center; padding: 10px; }
+.sp .b { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sp .b strong { font-family: var(--font-display); font-size: 16px; font-weight: 600; line-height: 1.2; }
+.sp .b em { font-size: 12.5px; color: var(--muted); }
+.kv { display: flex; gap: 10px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
+.kv b { color: var(--fg); font-family: var(--font-data); font-weight: 500; }
+
+/* Ficha */
+.sheet { position: fixed; inset: 0; z-index: 20; background: var(--bg); overflow-y: auto; }
+.sheet-in { max-width: 520px; margin: 0 auto; padding-inline: 16px; padding-block: calc(12px + env(safe-area-inset-top, 0px)) calc(40px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 20px; }
+.sheet .ph { border-radius: var(--r); }
+.credit { font-size: 11.5px; color: var(--muted); margin-top: 6px; min-height: 1.5em; }
+.car { position: relative; }
+.car-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: var(--r); background: var(--sea-soft); overscroll-behavior-x: contain; }
+.car-track::-webkit-scrollbar { display: none; }
+.car-track { aspect-ratio: 4 / 3; max-width: 100%; }
+.car-slide { flex: 0 0 100%; height: 100%; margin: 0; scroll-snap-align: center; min-width: 0; }
+.car-slide img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.car-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; background: rgba(10, 18, 22, .55); color: #fff; }
+.car-btn.prev { left: 8px; } .car-btn.next { right: 8px; }
+.car-count { position: absolute; right: 10px; bottom: 10px; font-size: 11.5px; padding: 2px 8px; border-radius: 999px; background: rgba(10, 18, 22, .6); color: #fff; }
+.car-dots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
+.car-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); transition: width .2s, background .2s; }
+.car-dots i.on { width: 18px; border-radius: 3px; background: var(--accent); }
+@media (hover: none) { .car-btn { display: none; } }
+.sp .phw { position: relative; display: block; }
+.sp .phw .n { position: absolute; right: 8px; bottom: 8px; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: rgba(10, 18, 22, .6); color: #fff; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.facts > div { background: var(--surface); padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.facts b { font-family: var(--font-data); font-weight: 500; font-size: 16px; }
+.facts .wide { grid-column: 1 / -1; }
+ul.clean { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.callout { border-radius: var(--r); padding: 12px 14px; font-size: 14px; }
+.callout.bad { background: var(--bad-soft); }
+.callout.warn { background: var(--warn-soft); }
+.callout.info { background: var(--sea-soft); }
+.callout.accent { background: var(--accent-soft); }
+.back { align-self: flex-start; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px 7px 10px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; font-weight: 500; }
+
+/* Fuentes */
+.src { display: flex; flex-direction: column; gap: 10px; }
+.src-item { padding: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.src-item:first-child { border-top: 0; }
+.src-item .h { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+details > summary { cursor: pointer; padding: 14px 16px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 10px; }
+details > summary::after { content: "+"; font-family: var(--font-data); color: var(--muted); }
+details[open] > summary::after { content: "–"; }
+details > .in { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+
+/* Pestañas */
+.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tabs-in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
+.tabs button { border: 0; background: none; padding: 9px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 500; color: var(--muted); cursor: pointer; }
+.tabs button[aria-current="page"] { color: var(--fg); }
+.tabs button[aria-current="page"] svg { color: var(--accent); }
+.foot { font-size: 12px; color: var(--muted); padding-block: 24px 8px; }
+@media (prefers-reduced-motion: no-preference) {
+  .view { animation: fade .18s ease-out; }
+  @keyframes fade { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+}
+@media (max-width: 360px) { .grid { grid-template-columns: 1fr; } .metrics { grid-template-columns: 1fr 1fr; } }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M2 20c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M12 3v7M9 7l3 3 3-3"/></svg>
+      <span>j<span style="color:var(--accent)">P</span>ique</span>
+    </div>
+    <label class="spot"><span class="label" hidden>Punto de pesca</span><select id="spot" aria-label="Punto de pesca"></select></label>
+    <button class="icon-btn" id="theme" type="button" aria-label="Cambiar tema"></button>
+  </header>
+  <main id="view"></main>
+  <p class="foot">Información referencial. La fuente oficial es Sernapesca y Subpesca; revisa la norma antes de salir. Normas verificadas el 5 de octubre de 2026.<br>
+    Viento y temperatura: <a href="https://api.met.no/" target="_blank" rel="noopener">MET Norway</a> (<a href="https://creativecommons.org/licenses/by/4.0/deed.es" target="_blank" rel="noopener">CC BY 4.0</a>). Olas: NOAA WaveWatch III vía <a href="https://www.pacioos.hawaii.edu/" target="_blank" rel="noopener">PacIOOS</a>. Mareas: cálculo propio con el mareógrafo de Valparaíso del <a href="https://uhslc.soest.hawaii.edu/" target="_blank" rel="noopener">UHSLC</a>. Sol, luna, estado del mar y actividad de peces: cálculos de la app a partir de esos datos.</p>
+</div>
+
+<nav class="tabs" aria-label="Secciones"><div class="tabs-in" id="tabs"></div></nav>
+<div class="sheet" id="sheet" hidden></div>
+
+<script id="snapshot" type="application/json">__SNAPSHOT__</script>
+<script>
+"use strict";
+const SNAP = JSON.parse(document.getElementById("snapshot").textContent);
+const VERIFICADO = "5 oct 2026";
+const PLANILLA = "https://www.sernapesca.cl/manuales_y_publicaciones/temporadas-de-pesca-recreativa-en-chile/";
+const RES443 = "Res. Ex. N.° 443, de 17-02-2025 (Subpesca)";
+const MAX_MAR = "La suma de todas las especies de la Res. Ex. 443 no puede pasar de 10 ejemplares por jornada.";
+
+/* ---------- Reglas de temporada ---------- */
+const md = (m, d) => m * 100 + d;
+const inRange = (date, a, b) => { const x = md(date.getMonth() + 1, date.getDate()); return a <= b ? x >= a && x <= b : x >= a || x <= b; };
+function nthWeekday(y, m, wd, n) { const d = new Date(y, m - 1, 1, 12); const off = (wd - d.getDay() + 7) % 7; d.setDate(1 + off + (n - 1) * 7); return d; }
+function nextMD(date, m, d) { let y = date.getFullYear(); let t = new Date(y, m - 1, d, 12); if (t < date) t = new Date(y + 1, m - 1, d, 12); return t; }
+function salmonSeason(date) {
+  const y = date.getFullYear();
+  const openThis = nthWeekday(y, 11, 5, 2), closeThis = nthWeekday(y, 5, 0, 1);
+  const open = date >= openThis || date <= closeThis;
+  if (open) { const close = date <= closeThis ? closeThis : nthWeekday(y + 1, 5, 0, 1); return { open, until: close }; }
+  return { open, next: openThis };
+}
+// tipos: "todo" (todo el año), "veda" [m1,d1,m2,d2], "temp" [m1,d1,m2,d2], "salmon", "devolucion"
+function estado(sp, date, spotTipo) {
+  const r = sp.regla;
+  if (r.t === "devolucion") return { k: "warn", txt: "Devolución obligatoria", det: "Se puede pescar, pero hay que devolver cada ejemplar vivo al agua." };
+  if (r.t === "todo") return { k: "ok", txt: "Abierta todo el año", det: "No tiene veda vigente." };
+  if (r.t === "veda") {
+    const [a, b, c, d] = r.v;
+    if (inRange(date, md(a, b), md(c, d))) { const n = nextMD(date, c, d); n.setDate(n.getDate() + 1); return { k: "bad", txt: "En veda", det: `Veda biológica del ${fmtMD(a, b)} al ${fmtMD(c, d)}. Se puede volver a pescar el ${fmtD(n)} (${dias(date, n)}).` }; }
+    return { k: "ok", txt: "Abierta", det: `Veda del ${fmtMD(a, b)} al ${fmtMD(c, d)} de cada año.` };
+  }
+  if (r.t === "temp") {
+    const [a, b, c, d] = r.v;
+    if (r.lagos && spotTipo && ["lago", "embalse"].includes(spotTipo)) return { k: "ok", txt: "Abierta (lagos y embalses)", det: "En lagos, lagunas, embalses y tranques se puede pescar todo el año. En ríos y esteros rige la temporada del 16 de diciembre al 15 de agosto." };
+    if (inRange(date, md(a, b), md(c, d))) return { k: "ok", txt: r.lagos ? "Abierta en ríos y lagos" : "Temporada abierta", det: `Temporada del ${fmtMD(a, b)} al ${fmtMD(c, d)}.` };
+    const n = nextMD(date, a, b);
+    return { k: "bad", txt: r.lagos ? "Cerrada en ríos" : "Fuera de temporada", det: `Temporada del ${fmtMD(a, b)} al ${fmtMD(c, d)}. Abre el ${fmtD(n)} (${dias(date, n)}).` + (r.lagos ? " En lagos y embalses está abierta todo el año." : "") };
+  }
+  if (r.t === "salmon") {
+    const s = salmonSeason(date);
+    if (s.open) return { k: "ok", txt: "Temporada abierta", det: `Cierra el ${fmtD(s.until)} (primer domingo de mayo).` };
+    return { k: "bad", txt: "Fuera de temporada", det: `La temporada en la zona central va del segundo viernes de noviembre al primer domingo de mayo. Abre el ${fmtD(s.next)} (${dias(date, s.next)}).` };
+  }
+}
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const DIAS = ["dom","lun","mar","mié","jue","vie","sáb"];
+const fmtMD = (m, d) => `${d} de ${MESES[m - 1]}`;
+const fmtD = (dt) => `${DIAS[dt.getDay()]} ${dt.getDate()} de ${MESES[dt.getMonth()]}`;
+const dias = (a, b) => { const n = Math.round((new Date(b.getFullYear(), b.getMonth(), b.getDate()) - new Date(a.getFullYear(), a.getMonth(), a.getDate())) / 864e5); return n === 1 ? "mañana" : `en ${n} días`; };
+
+/* ---------- Especies (planilla Sernapesca 2026-2027, v. 11-09-2026) ---------- */
+const ESPECIES = [
+  { id: "corvina", nombre: "Corvina", otros: [], sci: "Cilus gilberti", medio: "mar", regla: { t: "veda", v: [10, 1, 11, 30] }, talla: "Sin talla mínima", cuota: "3 por día",
+    norma: RES443 + "; D. Ex. N.° 758/2015 (veda); Res. Ex. N.° 2058/2015 (elimina talla mínima)",
+    rasgos: ["Cuerpo alargado, plateado con reflejos bronce o grisáceos.", "Boca grande y terminal, sin barbillas en el mentón.", "Cola recta o levemente cóncava; línea lateral marcada hasta la cola."],
+    confunde: [{ id: "roncacho", como: "El roncacho es más pequeño, de cuerpo más alto y boca más chica." }] },
+  { id: "lenguado", nombre: "Lenguado común", otros: ["Lenguado"], sci: "Paralichthys adspersus", medio: "mar", regla: { t: "todo" }, talla: "40 cm (longitud total)", cuota: "3 por día", norma: RES443,
+    rasgos: ["Pez plano: los dos ojos están en el lado izquierdo.", "Boca grande con dientes visibles.", "Lado de los ojos pardo con manchas; lado ciego blanco."],
+    confunde: [{ id: "lenguado-chico", como: "El lenguado de ojo chico tiene ojos más pequeños y su talla mínima es 30 cm." }],
+    notas: ["La talla mínima subió de 30 a 40 cm con la Res. Ex. 443 de 2025."] },
+  { id: "lenguado-chico", nombre: "Lenguado de ojo chico", otros: [], sci: "Paralichthys microps", medio: "mar", regla: { t: "todo" }, talla: "30 cm (longitud total)", cuota: "Sin cuota específica", norma: "Res. Ex. N.° 1447, de 30-04-2010",
+    rasgos: ["Pez plano parecido al lenguado común.", "Ojos proporcionalmente más pequeños."], confunde: [{ id: "lenguado", como: "El lenguado común exige 40 cm y máximo 3 por día." }] },
+  { id: "sierra", nombre: "Sierra", otros: [], sci: "Thyrsites atun", medio: "mar", regla: { t: "todo" }, talla: "Sin talla mínima", cuota: "6 por día", norma: RES443,
+    rasgos: ["Cuerpo muy alargado y comprimido, azul acero y plateado.", "Dientes grandes tipo colmillo.", "Aletas pequeñas sueltas (pínulas) detrás de la dorsal y la anal."], confunde: [] },
+  { id: "rollizo", nombre: "Rollizo", otros: [], sci: "Pinguipes chilensis", medio: "mar", regla: { t: "todo" }, talla: "Sin talla mínima", cuota: "5 por día", norma: RES443,
+    rasgos: ["Cuerpo cilíndrico y cabeza grande.", "Labios gruesos y hocico romo.", "Color pardo a amarillento con manchas más oscuras."], confunde: [] },
+  { id: "sargo", nombre: "Sargo", otros: [], sci: "Anisotremus scapularis", medio: "mar", regla: { t: "todo" }, talla: "Sin talla mínima", cuota: "5 por día", norma: RES443,
+    rasgos: ["Cuerpo alto y comprimido, gris plateado.", "Mancha oscura detrás de la cabeza, sobre la aleta pectoral.", "Labios gruesos."], confunde: [] },
+  { id: "pintacha", nombre: "Pintacha", otros: ["Bilagay"], sci: "Cheilodactylus variegatus", medio: "mar", regla: { t: "todo" }, talla: "Sin talla mínima", cuota: "5 por día", norma: RES443,
+    rasgos: ["Bandas verticales oscuras e irregulares sobre fondo claro.", "Boca pequeña.", "Radios inferiores de la aleta pectoral gruesos y separados."], confunde: [] },
+  { id: "baunco", nombre: "Baunco", otros: [], sci: "Girella laevifrons", medio: "mar", regla: { t: "todo" }, talla: "Sin talla mínima", cuota: "5 por día", norma: RES443,
+    rasgos: ["Cuerpo ovalado, verde oliva a casi negro.", "Boca pequeña con dientes en forma de incisivo.", "Común en pozas y roqueríos."],
+    confunde: [{ id: "acha", como: "La acha tiene el cuerpo más alto, casi redondo, y la cola en medialuna. Su cuota es 1." }] },
+  { id: "roncacho", nombre: "Roncacho", otros: ["Lorna"], sci: "Sciaena deliciosa", medio: "mar", regla: { t: "todo" }, talla: "Sin talla mínima", cuota: "5 por día", norma: RES443,
+    rasgos: ["Plateado, de cuerpo alto.", "Hace un sonido de ronquido al sacarlo del agua.", "Común en playas de arena."], confunde: [{ id: "corvina", como: "Una corvina juvenil se parece, pero la corvina está en veda del 1 de octubre al 30 de noviembre." }] },
+  { id: "vieja", nombre: "Vieja negra", otros: ["Mulata"], sci: "Graus nigra", medio: "mar", regla: { t: "todo" }, talla: "Sin talla mínima", cuota: "1 por día", norma: RES443,
+    rasgos: ["Cuerpo robusto, negro o café muy oscuro.", "Los juveniles tienen manchas claras.", "Vive en roqueríos y puede ser muy grande."], confunde: [] },
+  { id: "pejeperro", nombre: "Pejeperro", otros: [], sci: "Semicossyphus darwini", medio: "mar", regla: { t: "todo" }, talla: "Sin talla mínima", cuota: "1 por día", norma: RES443,
+    rasgos: ["Dientes caninos muy marcados.", "Machos adultos con giba en la frente.", "Colores rojizos con zonas oscuras."], confunde: [] },
+  { id: "acha", nombre: "Acha", otros: [], sci: "Medialuna ancietae", medio: "mar", regla: { t: "todo" }, talla: "Sin talla mínima", cuota: "1 por día", norma: RES443,
+    rasgos: ["Cuerpo muy alto, casi discoidal.", "Gris azulado.", "Cola en forma de medialuna."], confunde: [{ id: "baunco", como: "El baunco es más alargado y oscuro; su cuota es 5." }] },
+  { id: "bonito", nombre: "Bonito", otros: [], sci: "Sarda chiliensis", medio: "mar", regla: { t: "todo" }, talla: "Sin talla mínima", cuota: "6 por día", norma: RES443,
+    rasgos: ["Forma de atún pequeño.", "Franjas oscuras oblicuas en el dorso."], confunde: [] },
+  { id: "toremo", nombre: "Toremo", otros: ["Vidriola"], sci: "Seriola lalandi", medio: "mar", regla: { t: "todo" }, talla: "Sin talla mínima", cuota: "4 por día", norma: RES443,
+    rasgos: ["Cuerpo fusiforme, dorso azul verdoso.", "Franja amarilla a lo largo del costado.", "Cola amarilla y ahorquillada."], confunde: [] },
+  { id: "pejegallo", nombre: "Pejegallo", otros: [], sci: "Callorhinchus callorynchus", medio: "mar", regla: { t: "devolucion" }, talla: "—", cuota: "Devolver todos", norma: RES443,
+    rasgos: ["Apéndice carnoso en el hocico, como una trompa.", "Cuerpo plateado con manchas oscuras.", "Espina venenosa delante de la aleta dorsal: manipular con cuidado."], confunde: [] },
+  { id: "tollo", nombre: "Tollo común", otros: [], sci: "Mustelus whitneyi", medio: "mar", regla: { t: "devolucion" }, talla: "—", cuota: "Devolver todos", norma: RES443,
+    rasgos: ["Tiburón pequeño, gris pardo.", "Dos aletas dorsales de tamaño parecido."], confunde: [] },
+  { id: "jurel", nombre: "Jurel", otros: [], sci: "Trachurus murphyi", medio: "mar", regla: { t: "todo" }, talla: "26 cm (a la horquilla)", cuota: "Sin cuota específica", norma: "Res. Ex. N.° 1665 de 2012; D. Ex. N.° 458 de 1981",
+    rasgos: ["Escudos óseos a lo largo de la línea lateral.", "Dorso azul verdoso y vientre plateado.", "La talla se mide hasta la horquilla de la cola."], confunde: [] },
+  { id: "merluza", nombre: "Merluza común", otros: ["Pescada"], sci: "Merluccius gayi", medio: "mar", regla: { t: "veda", v: [9, 1, 9, 30] }, talla: "Sin talla mínima", cuota: "Sin cuota específica", norma: "D. Ex. N.° 464, de 15-06-2016",
+    rasgos: ["Cuerpo alargado, gris plateado.", "Boca grande con interior oscuro.", "Dos aletas dorsales."], confunde: [] },
+
+  { id: "arcoiris", nombre: "Trucha arcoíris", otros: [], sci: "Oncorhynchus mykiss", medio: "dulce", regla: { t: "salmon" }, talla: "Sin talla mínima", cuota: "3 ejemplares o 15 kg", norma: "D.S. N.° 320 de 1981 (mod. D.S. 425 y 149 de 1986)",
+    rasgos: ["Franja rosada o rojiza a lo largo del costado.", "Puntos negros en el cuerpo y también en la cola."], confunde: [{ id: "cafe", como: "La trucha café tiene puntos rojos con halo claro y casi no tiene puntos en la cola." }],
+    notas: ["Solo señuelo artificial con un anzuelo simple o un triple (araña). Plomada de máximo 100 g y una caña a la vez.", "Prohibido pescar de 21:00 a 06:00 a menos de 500 m de desembocaduras y desagües."] },
+  { id: "cafe", nombre: "Trucha café", otros: ["Trucha marrón"], sci: "Salmo trutta", medio: "dulce", regla: { t: "salmon" }, talla: "Sin talla mínima", cuota: "3 ejemplares o 15 kg", norma: "D.S. N.° 320 de 1981 (mod. D.S. 425 y 149 de 1986)",
+    rasgos: ["Puntos negros y rojos, muchos con un halo claro.", "Tono dorado a pardo.", "Cola con pocos puntos o sin ellos."], confunde: [{ id: "arcoiris", como: "La arcoíris tiene franja rosada y puntos en toda la cola." }],
+    notas: ["Mismas reglas de aparejo que la trucha arcoíris."] },
+  { id: "pejerrey-cl", nombre: "Pejerrey chileno", otros: [], sci: "Basilichthys australis", medio: "dulce", regla: { t: "temp", v: [12, 16, 8, 15] }, talla: "Sin talla mínima", cuota: "15 por día", norma: "Decreto N.° 211, de 22-10-1984",
+    rasgos: ["Cuerpo alargado y translúcido.", "Banda plateada a lo largo del costado."], confunde: [{ id: "pejerrey-ar", como: "El pejerrey argentino es introducido, más grande, y en lagos y embalses se puede pescar todo el año." }],
+    notas: ["Se permite carnada viva."] },
+  { id: "pejerrey-ar", nombre: "Pejerrey argentino", otros: [], sci: "Odontesthes bonariensis", medio: "dulce", regla: { t: "temp", v: [12, 16, 8, 15], lagos: true }, talla: "Sin talla mínima", cuota: "73 por día", norma: "Decreto N.° 211, de 22-10-1984",
+    rasgos: ["Banda plateada lateral bien marcada.", "Más grande y robusto que el pejerrey chileno."], confunde: [{ id: "pejerrey-cl", como: "El pejerrey chileno es nativo, más pequeño, y su cuota es 15." }],
+    notas: ["Se permite carnada viva."] },
+  { id: "percatrucha", nombre: "Perca trucha", otros: ["Percatrucha"], sci: "Percichthys trucha", medio: "dulce", regla: { t: "temp", v: [1, 1, 4, 15] }, talla: "Sin talla mínima", cuota: "3 ejemplares o 15 kg", norma: "D.S. N.° 320 de 1981",
+    rasgos: ["Especie nativa de cuerpo alto.", "Dorso verdoso oscuro; dos aletas dorsales unidas."], confunde: [],
+    notas: ["Solo señuelo artificial, como en las truchas."] },
+];
+const SPMAP = Object.fromEntries(ESPECIES.map(s => [s.id, s]));
+const fotos = (sp) => SNAP.fotos[sp.sci] || [];
+const foto = (sp) => fotos(sp)[0];
+const credito = (f) => H(f.autor.replace(/^\(c\)\s*/, "").replace(/^no rights reserved$/i, "").replace(/,? ?some rights reserved.*$/i, "").replace(/\s*\((CC|Public)[^)]*\)\s*$/i, "").trim() || "Autor no indicado");
+const licTxt = (l) => /public domain/i.test(l) ? "Dominio público" : l.toUpperCase().replace(/^CC-/, "CC ");
+// Enlace al texto de la licencia de cada foto (lo exigen CC BY y CC BY-SA)
+function licUrl(l) {
+  const s = l.toLowerCase().replace(/^cc[- ]/, "").replace(/\s+/g, " ").trim();
+  if (/public domain/.test(s)) return "https://creativecommons.org/publicdomain/mark/1.0/deed.es";
+  if (/^cc0|^0/.test(s)) return "https://creativecommons.org/publicdomain/zero/1.0/deed.es";
+  const m = s.match(/^(by(?:-sa)?)(?:\s+([\d.]+))?/); if (!m) return null;
+  return `https://creativecommons.org/licenses/${m[1]}/${m[2] || "4.0"}/deed.es`;
+}
+const licLink = (l) => { const u = licUrl(l); return u ? `<a href="${u}" target="_blank" rel="noopener">${H(licTxt(l))}</a>` : H(licTxt(l)); };
+function carrusel(sp) {
+  const fs = fotos(sp);
+  if (!fs.length) return `<div class="ph-empty" style="border-radius:var(--r)">No encontramos una foto con licencia comercial. Esta ficha necesita foto propia.</div>`;
+  return `<div class="car">
+    <div class="car-track" id="car" tabindex="0" aria-label="Fotos de ${H(sp.nombre)}. Desliza para ver más.">${fs.map((f, i) => `<figure class="car-slide"><img src="${f.archivo}" alt="${H(sp.nombre)}, foto ${i + 1} de ${fs.length}" ${i ? 'loading="lazy"' : ""}></figure>`).join("")}</div>
+    ${fs.length > 1 ? `<button class="car-btn prev" type="button" data-car="-1" aria-label="Foto anterior">${svgI('<path d="M15 6l-6 6 6 6"/>', 18)}</button>
+    <button class="car-btn next" type="button" data-car="1" aria-label="Foto siguiente">${svgI('<path d="M9 6l6 6-6 6"/>', 18)}</button>
+    <span class="car-count num" id="car-n">1 / ${fs.length}</span>` : ""}
+  </div>
+  ${fs.length > 1 ? `<div class="car-dots" aria-hidden="true">${fs.map((_, i) => `<i ${i ? "" : 'class="on"'}></i>`).join("")}</div>` : ""}
+  <p class="credit" id="car-cred"></p>`;
+}
+function carruselInit(sp) {
+  const fs = fotos(sp), tr = $("#car"); if (!tr) return;
+  const upd = () => {
+    const i = tr.clientWidth ? Math.min(fs.length - 1, Math.round(tr.scrollLeft / tr.clientWidth)) : 0, f = fs[i];
+    const n = $("#car-n"); if (n) n.textContent = `${i + 1} / ${fs.length}`;
+    document.querySelectorAll(".car-dots i").forEach((d, k) => d.classList.toggle("on", k === i));
+    $("#car-cred").innerHTML = `${f.nota ? `<strong>${H(f.nota)}.</strong> ` : ""}Foto: ${credito(f)} · ${licLink(f.licencia)} · <a href="${f.fuente}" target="_blank" rel="noopener">${f.fuente.includes("wikimedia") ? "Wikimedia Commons" : "iNaturalist"}</a> · tamaño reducido${/s\d\.jpg$/.test(f.archivo) && !/s1\.jpg$/.test(f.archivo) ? " y girada" : ""}`;
+  };
+  tr.addEventListener("scroll", () => requestAnimationFrame(upd), { passive: true });
+  tr.addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); tr.scrollBy({ left: (e.key === "ArrowRight" ? 1 : -1) * tr.clientWidth, behavior: "smooth" }); } });
+  upd();
+}
+
+/* ---------- Puntos y condiciones ---------- */
+const SPOTS = SNAP.spots;
+const TIPO_NOMBRE = { orilla: "Playa", "roquerío": "Roquerío", "río": "Río", lago: "Lago", embalse: "Embalse" };
+const esMar = (s) => s.tipo === "orilla" || s.tipo === "roquerío";
+const live = {}; // datos recibidos en vivo por punto
+
+function nowCL() {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hour12: false }).formatToParts(new Date()).map(x => [x.type, x.value]));
+  return { ymd: `${p.year}-${p.month}-${p.day}`, h: +p.hour % 24 };
+}
+const ymdDate = (ymd) => { const [y, m, d] = ymd.split("-").map(Number); return new Date(y, m - 1, d, 12); };
+const addDays = (ymd, n) => { const d = ymdDate(ymd); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+
+/* Fuentes gratuitas que permiten uso comercial (avisos incluidos):
+   - Viento y temperatura: MET Norway Locationforecast (CC BY 4.0)
+   - Olas: NOAA WaveWatch III vía PacIOOS ERDDAP (uso y redistribución libres)
+   - Mareas: predicción armónica propia con el mareógrafo de Valparaíso (UHSLC, datos abiertos)
+   - Sol: cálculo astronómico en el celular */
+const MET_URL = "https://api.met.no/weatherapi/locationforecast/2.0/compact";
+const OLAS_URL = "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/ww3_global.json";
+// Celda de mar más cercana del modelo de olas (rejilla de 0,5°; longitud en grados este)
+const CELDA_OLAS = { papudo: [-32.5, 288.5], quintero: [-33, 288], concon: [-33, 288], valparaiso: [-33, 288], algarrobo: [-33.5, 288],
+  cartagena: [-33.5, 288], llolleo: [-33.5, 288], navidad: [-34, 288], pichilemu: [-34.5, 287.5], bucalemu: [-34.5, 287.5],
+  constitucion: [-35, 287.5], pelluhue: [-36, 287] };
+const MAREAS = SNAP.mareas; // { estacion, extremos: [[minutos UTC, cm sobre el nivel medio], ...] }
+const FMT_CL = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+function partesCL(ms) { const p = Object.fromEntries(FMT_CL.formatToParts(new Date(ms)).map(x => [x.type, x.value])); return { ymd: `${p.year}-${p.month}-${p.day}`, hm: `${String(+p.hour % 24).padStart(2, "0")}:${p.minute}` }; }
+
+// Pasa una serie con instantes UTC (ms) a 7 días × 24 horas de Chile desde t0, interpolando entre puntos cercanos
+function aHoras(tiempos, valores, t0) {
+  const base = medianocheCL(t0), out = new Array(168).fill(null);
+  const pts = tiempos.map((t, i) => [(t - base) / 3.6e6, valores[i]]).filter(p => p[1] != null && !isNaN(p[1]));
+  let j = 0;
+  for (let h = 0; h < 168; h++) {
+    while (j < pts.length && pts[j][0] < h) j++;
+    if (j < pts.length && Math.abs(pts[j][0] - h) < 0.01) { out[h] = pts[j][1]; continue; }
+    if (j === 0) { if (pts.length && pts[0][0] - h <= 3) out[h] = pts[0][1]; continue; }       // poco antes del primer dato
+    if (j >= pts.length) { if (h - pts[pts.length - 1][0] <= 3) out[h] = pts[pts.length - 1][1]; continue; } // poco después del último
+    const [x0, y0] = pts[j - 1], [x1, y1] = pts[j]; if (x1 - x0 > 7) continue;
+    out[h] = y0 + (y1 - y0) * (h - x0) / (x1 - x0);
+  }
+  return out;
+}
+
+// Mareas: entre una pleamar y una bajamar la altura sigue una media onda coseno
+function mareasDesde(t0) {
+  const base = medianocheCL(t0), fin = base + 7 * 864e5, ex = MAREAS.extremos;
+  let i = ex.findIndex(e => e[0] * 6e4 >= base); if (i < 0) return null; i = Math.max(0, i - 1);
+  const lista = []; for (; i < ex.length && ex[i][0] * 6e4 <= fin + 864e5; i++) lista.push([ex[i][0] * 6e4, ex[i][1] / 100]);
+  if (lista.length < 3) return null;
+  const altura = (t) => { let k = 0; while (k < lista.length - 2 && lista[k + 1][0] <= t) k++;
+    const [ta, ha] = lista[k], [tb, hb] = lista[k + 1]; const f = Math.min(1, Math.max(0, (t - ta) / (tb - ta)));
+    return (ha + hb) / 2 + (ha - hb) / 2 * Math.cos(Math.PI * f); };
+  const serie = []; for (let h = 0; h < 168; h++) serie.push(+altura(base + h * 3.6e6).toFixed(3));
+  const ext = lista.map((e, k) => { const vec = lista[k + 1] || lista[k - 1]; const p = partesCL(e[0]);
+    return { tipo: e[1] > vec[1] ? "Pleamar" : "Bajamar", t: (e[0] - base) / 3.6e6, ymd: p.ymd, hora: p.hm, h: e[1] }; })
+    .filter(e => e.t >= 0 && e.t < 168);
+  return { serie, ext };
+}
+
+// Salida y puesta de sol (fórmulas de SunCalc, precisión de 1 a 2 minutos)
+function solDia(ymd, lat, lon) {
+  const ms = medianocheCL(ymd) + 12 * 3.6e6, J0 = 0.0009, lw = RAD * -lon, phi = RAD * lat;
+  const d = ms / 864e5 - 0.5 + 2440588 - 2451545, n = Math.round(d - J0 - lw / (2 * Math.PI));
+  const ds = J0 + lw / (2 * Math.PI) + n, M = RAD * (357.5291 + 0.98560028 * ds);
+  const L = M + RAD * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M)) + RAD * 102.9372 + Math.PI;
+  const dec = Math.asin(Math.sin(OBL) * Math.sin(L)), transito = (a) => 2451545 + a + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L);
+  const w = Math.acos((Math.sin(-0.833 * RAD) - Math.sin(phi) * Math.sin(dec)) / (Math.cos(phi) * Math.cos(dec)));
+  const Jnoon = transito(ds), Jset = transito(J0 + (w + lw) / (2 * Math.PI) + n), Jrise = Jnoon - (Jset - Jnoon);
+  const aMs = (j) => (j + 0.5 - 2440588) * 864e5, f = (j) => { const p = partesCL(aMs(j)); return `${p.ymd}T${p.hm}`; };
+  return { sale: f(Jrise), pone: f(Jset) };
+}
+
+const MEMO_DATOS = {};
+function datos(spot) {
+  const crudo = live[spot.id] || SNAP.crudo[spot.id], fuente = live[spot.id] ? "live" : "snap", hoy = nowCL().ymd;
+  const clave = `${spot.id}|${fuente}|${hoy}`; if (MEMO_DATOS[clave]) return MEMO_DATOS[clave];
+  const tt = crudo.tiempo.t, t0 = tt[tt.length - 1] >= medianocheCL(hoy) ? hoy : partesCL(tt[0]).ymd;
+  const dias = [...Array(7)].map((_, i) => solDia(addDays(t0, i), spot.lat, spot.lon));
+  const w = { wind: aHoras(tt, crudo.tiempo.v.map(x => x * 3.6), t0), dir: aHoras(tt, crudo.tiempo.d, t0), temp: aHoras(tt, crudo.tiempo.c, t0),
+    sunrise: dias.map(x => x.sale), sunset: dias.map(x => x.pone) };
+  let m = null, ext = [];
+  if (esMar(spot)) {
+    const mar = mareasDesde(t0), o = crudo.olas;
+    m = { sea_level_height_msl: mar ? mar.serie : new Array(168).fill(null), wave_height: o ? aHoras(o.t, o.hs, t0) : new Array(168).fill(null),
+      wave_period: o ? aHoras(o.t, o.tp, t0) : new Array(168).fill(null) };
+    ext = mar ? mar.ext : [];
+  }
+  return (MEMO_DATOS[clave] = { fuente, t0, w, m, ext });
+}
+async function cargarVivo(spot) {
+  if (live[spot.id]) return;
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 15000);
+  try {
+    const met = await fetch(`${MET_URL}?lat=${spot.lat.toFixed(4)}&lon=${spot.lon.toFixed(4)}`, { signal: ctl.signal }).then(r => { if (!r.ok) throw r.status; return r.json(); });
+    const ts = met.properties.timeseries;
+    const crudo = { tiempo: { t: ts.map(x => Date.parse(x.time)), v: ts.map(x => x.data.instant.details.wind_speed), d: ts.map(x => x.data.instant.details.wind_from_direction), c: ts.map(x => x.data.instant.details.air_temperature) }, olas: null };
+    const celda = CELDA_OLAS[spot.id];
+    if (celda) {
+      try {
+        const desde = new Date(medianocheCL(nowCL().ymd)).toISOString().slice(0, 19) + "Z", sel = `[(${desde}):1:(last)][(0.0)][(${celda[0]})][(${celda[1]})]`;
+        const o = await fetch(`${OLAS_URL}?${encodeURIComponent(`Thgt${sel},Tper${sel}`)}`, { signal: ctl.signal }).then(r => { if (!r.ok) throw r.status; return r.json(); });
+        const rows = o.table.rows; crudo.olas = { t: rows.map(r => Date.parse(r[0])), hs: rows.map(r => r[4]), tp: rows.map(r => r[5]) };
+      } catch (e) { crudo.olas = (SNAP.crudo[spot.id] || {}).olas || null; } // si falla, se usan las olas guardadas
+    }
+    const elegido = addDays(datos(spot).t0, st.dia); // mantener el mismo día elegido al cambiar de fuente
+    live[spot.id] = crudo;
+    if (spot.id === st.spot) st.dia = Math.min(6, Math.max(0, Math.round((ymdDate(elegido) - ymdDate(datos(spot).t0)) / 864e5)));
+    render();
+  } catch (e) { /* sin conexión: se usan los datos guardados */ }
+  finally { clearTimeout(to); }
+}
+const hhmm = (x) => { let h = Math.floor(x), m = Math.round((x - h) * 60); if (m === 60) { h++; m = 0; } return `${String(h % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`; };
+const fmtH = (x) => (x >= 0 ? "+" : "−") + Math.abs(x).toFixed(2) + " m";
+function lunaFase(date) {
+  const syn = 29.530588853, ref = Date.UTC(2000, 0, 6, 18, 14);
+  const age = (((date.getTime() - ref) / 864e5) % syn + syn) % syn;
+  const illum = (1 - Math.cos(2 * Math.PI * age / syn)) / 2;
+  const names = ["Luna nueva", "Creciente", "Cuarto creciente", "Gibosa creciente", "Luna llena", "Gibosa menguante", "Cuarto menguante", "Menguante"];
+  return { nombre: names[Math.floor(((age / syn) * 8) + 0.5) % 8], illum, age };
+}
+/* ---------- Actividad de peces: teoría solunar + marea + amanecer/atardecer ---------- */
+// Posición de la luna (fórmulas de baja precisión de SunCalc / Meeus; error de pocos minutos)
+const RAD = Math.PI / 180, OBL = RAD * 23.4397;
+function lunaPos(ms, lat, lon) {
+  const d = ms / 864e5 - 0.5 + 2440588 - 2451545;
+  const L = RAD * (218.316 + 13.176396 * d), M = RAD * (134.963 + 13.064993 * d), F = RAD * (93.272 + 13.229350 * d);
+  const l = L + RAD * 6.289 * Math.sin(M), b = RAD * 5.128 * Math.sin(F);
+  const ra = Math.atan2(Math.sin(l) * Math.cos(OBL) - Math.tan(b) * Math.sin(OBL), Math.cos(l));
+  const dec = Math.asin(Math.sin(b) * Math.cos(OBL) + Math.cos(b) * Math.sin(OBL) * Math.sin(l));
+  const H = RAD * (280.16 + 360.9856235 * d) + RAD * lon - ra, phi = RAD * lat;
+  return { alt: Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H)), H };
+}
+// Medianoche de Chile (America/Santiago) de un día "YYYY-MM-DD", en milisegundos UTC
+function medianocheCL(ymd) {
+  const [y, m, d] = ymd.split("-").map(Number); let t = Date.UTC(y, m - 1, d, 4);
+  for (let k = 0; k < 2; k++) {
+    const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date(t)).map(x => [x.type, x.value]));
+    const loc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute); t += Date.UTC(y, m - 1, d) - loc;
+  }
+  return t;
+}
+function eventosLuna(ymd, lat, lon) {
+  const t0 = medianocheCL(ymd), paso = 5 * 60e3, ev = [];
+  let prev = lunaPos(t0, lat, lon);
+  for (let i = 1; i <= 288; i++) {
+    const cur = lunaPos(t0 + i * paso, lat, lon), h = (i - 0.5) * 5 / 60;
+    const h0 = 0.133 * RAD; // horizonte con refracción
+    if (prev.alt < -h0 && cur.alt >= -h0) ev.push({ k: "sale", h });
+    if (prev.alt >= -h0 && cur.alt < -h0) ev.push({ k: "pone", h });
+    const s0 = Math.sin(prev.H), s1 = Math.sin(cur.H);
+    if (s0 < 0 && s1 >= 0 && Math.cos(cur.H) > 0) ev.push({ k: "cenit", h });
+    if (s0 > 0 && s1 <= 0 && Math.cos(cur.H) < 0) ev.push({ k: "nadir", h });
+    prev = cur;
+  }
+  return ev;
+}
+const hm = (h) => { const x = (h % 24 + 24) % 24; return hhmm(x); };
+function actividad(spot, D, di) {
+  const ymd = addDays(D.t0, di), luna = lunaFase(ymdDate(ymd)), ev = eventosLuna(ymd, spot.lat, spot.lon);
+  const fase = Math.abs(Math.cos(2 * Math.PI * luna.age / 29.530588853)); // 1 en luna nueva o llena, 0 en cuartos
+  const toH = (s) => { const [a, b] = s.slice(11).split(":").map(Number); return a + b / 60; };
+  const sr = toH(D.w.sunrise[di]), ss = toH(D.w.sunset[di]);
+  const g = (x, c, s) => Math.exp(-(((x - c) / s) ** 2));
+  const mar = !!D.m, serie = D.m ? D.m.sea_level_height_msl : null;
+  const mov = []; let maxMov = 0.01;
+  for (let h = 0; h < 24; h++) { const i = di * 24 + h; const a = serie ? serie[Math.max(0, i - 1)] : null, b = serie ? serie[Math.min(serie.length - 1, i + 1)] : null;
+    const v = a != null && b != null ? (b - a) / 2 : 0; mov.push(v); maxMov = Math.max(maxMov, Math.abs(v)); }
+  const horas = [], det = [];
+  const mayor = (x) => ev.filter(e => e.k === "cenit" || e.k === "nadir").map(e => [g(x, e.h, 1.1), e.k]);
+  const menor = (x) => ev.filter(e => e.k === "sale" || e.k === "pone").map(e => [0.7 * g(x, e.h, 0.7), e.k]);
+  for (let h = 0; h < 24; h++) {
+    const x = h + 0.5, cand = [...mayor(x), ...menor(x)].sort((a, b) => b[0] - a[0]);
+    const sol = cand.length ? cand[0][0] : 0;
+    const luz = Math.max(g(x, sr, 1.1), g(x, ss, 1.1));
+    const marea = mar ? Math.abs(mov[h]) / maxMov * (mov[h] > 0 ? 1 : 0.8) : 0; // marea subiendo pesa un poco más
+    const base = mar ? 0.4 * sol + 0.4 * marea + 0.2 * luz : 0.65 * sol + 0.35 * luz;
+    horas.push(Math.round(100 * base * (0.65 + 0.35 * fase)));
+    det.push({ sol, solK: cand.length ? cand[0][1] : null, luz, luzK: g(x, sr, 1.1) >= g(x, ss, 1.1) ? "amanecer" : "atardecer", marea, sube: mov[h] > 0 });
+  }
+  // Mejores ventanas: tramos seguidos sobre el 75 % del máximo del día
+  const max = Math.max(...horas), corte = Math.max(30, max * 0.75), vent = [];
+  for (let h = 0; h < 24; h++) if (horas[h] >= corte) { if (vent.length && vent[vent.length - 1].fin === h) vent[vent.length - 1].fin = h + 1; else vent.push({ ini: h, fin: h + 1 }); }
+  vent.forEach(v => {
+    const pico = v.ini + horas.slice(v.ini, v.fin).indexOf(Math.max(...horas.slice(v.ini, v.fin))); v.pico = horas[pico]; v.hpico = pico;
+    const m = v.ini - 0.5, n = v.fin + 0.5, r = [];
+    ev.filter(e => e.h >= m && e.h <= n).forEach(e => r.push({ cenit: "luna en lo alto", nadir: "luna bajo el horizonte opuesto", sale: "sale la luna", pone: "se pone la luna" }[e.k]));
+    if (sr >= m && sr <= n) r.push("amanecer"); if (ss >= m && ss <= n) r.push("atardecer");
+    if (mar) { const s = mov.slice(v.ini, v.fin).reduce((a, b) => a + b, 0); r.push(s > 0 ? "marea subiendo" : "marea bajando"); }
+    v.razones = [...new Set(r)];
+  });
+  vent.sort((a, b) => b.pico - a.pico);
+  const top = [...horas].sort((a, b) => b - a).slice(0, 4).reduce((a, b) => a + b, 0) / 4;
+  const nivel = top >= 70 ? { k: "ok", txt: "Muy buena" } : top >= 55 ? { k: "ok", txt: "Buena" } : top >= 40 ? { k: "warn", txt: "Regular" } : { k: "bad", txt: "Baja" };
+  return { horas, det, vent: vent.slice(0, 3), nivel, ev, luna, fase, mar };
+}
+/* ---------- Luna de noche y coeficiente de marea (todo calculado en el celular) ---------- */
+// Dibujo de la fase vista desde Chile (hemisferio sur: la luna creciente se ilumina por la izquierda)
+function lunaSVG(age, size = 44) {
+  const syn = 29.530588853, k = (1 - Math.cos(2 * Math.PI * age / syn)) / 2, izq = age < syn / 2;
+  const c = size / 2, r = c - 1, rx = Math.max(0.01, r * Math.abs(1 - 2 * k));
+  const ext = izq ? 0 : 1, int = k < 0.5 ? (izq ? 1 : 0) : (izq ? 0 : 1);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true" style="flex:none"><circle cx="${c}" cy="${c}" r="${r}" fill="var(--line)"/>
+    ${k > 0.01 ? `<path d="M${c} ${c - r} A${r} ${r} 0 0 ${ext} ${c} ${c + r} A${rx.toFixed(2)} ${r} 0 0 ${int} ${c} ${c - r}Z" fill="var(--moon)"/>` : ""}</svg>`;
+}
+const aMs = (iso) => { const [d, t] = iso.split("T"), [h, m] = t.split(":").map(Number); return medianocheCL(d) + h * 3.6e6 + m * 6e4; };
+// Luz de luna en la noche: iluminación × parte de la noche (atardecer a amanecer) con la luna sobre el horizonte
+function lunaNoche(ymd, spot) {
+  const ini = aMs(solDia(ymd, spot.lat, spot.lon).pone), fin = aMs(solDia(addDays(ymd, 1), spot.lat, spot.lon).sale);
+  let arriba = 0, n = 0; for (let t = ini; t <= fin; t += 15 * 6e4) { n++; if (lunaPos(t, spot.lat, spot.lon).alt > 0) arriba++; }
+  const f = lunaFase(new Date((ini + fin) / 2)), luz = f.illum * (arriba / n);
+  return { ...f, arriba: arriba / n, luz, tipo: luz < 0.2 ? "Noche oscura" : luz < 0.55 ? "Noche con algo de luna" : "Noche clara" };
+}
+function lunaHTML(spot, D, di) {
+  const ymd = addDays(D.t0, di), N = lunaNoche(ymd, spot), ev = eventosLuna(ymd, spot.lat, spot.lon);
+  const sale = ev.find(e => e.k === "sale"), pone = ev.find(e => e.k === "pone");
+  const semana = [...Array(7)].map((_, i) => { const d = addDays(D.t0, i), x = lunaNoche(d, spot); return { i, d, x }; });
+  return `<section class="card stack">
+    <span class="label">Luna</span>
+    ${(() => { const F = lunaFase(ymdDate(ymd)); return `<div style="display:flex;gap:14px;align-items:center">${lunaSVG(F.age, 60)}
+      <div class="stack" style="gap:2px"><h2>${H(F.nombre)}</h2><span class="small muted"><span class="num">${Math.round(F.illum * 100)}%</span> iluminada · ${Math.round(F.age)} días de su ciclo</span></div></div>`; })()}
+    <div class="metrics" style="margin-top:4px">
+      <div class="metric"><span>Luz esta noche</span><b>${Math.round(N.luz * 100)}%</b><span>${N.tipo.replace("Noche ", "")}</span></div>
+      <div class="metric"><span>Sale la luna</span><b>${sale ? hm(sale.h) : "—"}</b><span>${sale ? "" : "no sale hoy"}</span></div>
+      <div class="metric"><span>Se pone</span><b>${pone ? hm(pone.h) : "—"}</b><span>${pone ? "" : "no se pone hoy"}</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center">${semana.map(({ i, d, x }) => `<button type="button" data-dia="${i}" style="border:0;background:${i === di ? "var(--bg)" : "none"};border-radius:10px;padding:6px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px">
+      <span style="font-size:11px;color:var(--muted)">${nombreDia(D, i, nowCL(), true)}</span>${lunaSVG(x.age, 24)}<span class="num" style="font-size:12px">${Math.round(x.luz * 100)}%</span></button>`).join("")}</div>
+    <p class="small muted">Sol: sale ${D.w.sunrise[di].slice(11)} · se pone ${D.w.sunset[di].slice(11)}. «Luz esta noche» combina cuánto se ve iluminada la luna y cuántas horas de la noche está sobre el horizonte: en noches oscuras muchos peces se acercan más a la orilla y conviene usar señuelos con brillo o luz.</p>
+  </section>`;
+}
+// Coeficiente de marea (escala 20 a 120, como en las tablas de mareas): compara el rango del día con las mareas vivas y muertas medias
+const ARM = (SNAP.mareas && SNAP.mareas.componentes) || { M2: 42.7, S2: 14.6 };
+function coefMarea(D, di) {
+  const ex = D.ext; let rango = 0;
+  for (let i = 0; i < ex.length - 1; i++) { const a = ex[i], b = ex[i + 1]; if (Math.floor(a.t / 24) === di || Math.floor(b.t / 24) === di) rango = Math.max(rango, Math.abs(a.h - b.h)); }
+  if (!rango) return null;
+  const viva = 2 * (ARM.M2 + ARM.S2) / 100, muerta = 2 * (ARM.M2 - ARM.S2) / 100;
+  const c = Math.round(Math.min(120, Math.max(20, 45 + (rango - muerta) / (viva - muerta) * 50)));
+  return { c, rango, txt: c >= 90 ? "Mareas vivas" : c <= 50 ? "Mareas muertas" : "Marea media", k: c >= 90 ? "ok" : c <= 50 ? "bad" : "warn" };
+}
+const enCuanto = (min) => min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")} min`;
+
+// Explica en palabras por qué una hora tiene ese puntaje
+function detalleHora(A, h) {
+  const d = A.det[h], nivel = (v) => v >= 0.66 ? "fuerte" : v >= 0.33 ? "media" : "débil";
+  const solTxt = { cenit: "luna en lo alto", nadir: "luna en el lado opuesto", sale: "sale la luna", pone: "se pone la luna" };
+  const filas = [
+    ["Luna (solunar)", d.sol, d.sol >= 0.15 ? solTxt[d.solK] : "lejos de un periodo solunar"],
+    ...(A.mar ? [["Marea", d.marea, d.marea >= 0.15 ? (d.sube ? "subiendo" : "bajando") : "casi quieta (estoa)"]] : []),
+    ["Luz", d.luz, d.luz >= 0.15 ? d.luzK : "lejos del amanecer y atardecer"],
+    ["Fase lunar", A.fase, A.fase >= 0.66 ? "cerca de luna nueva o llena" : A.fase >= 0.33 ? "fase intermedia" : "cerca de cuarto"],
+  ];
+  const v = A.horas[h], k = v >= 60 ? "ok" : v >= 35 ? "warn" : "bad";
+  return `<div class="stack" style="gap:8px;background:var(--bg);border-radius:10px;padding:12px">
+    <div class="sec-head"><strong class="num">${String(h).padStart(2, "0")}:00 – ${String((h + 1) % 24).padStart(2, "0")}:00</strong><span class="chip ${k}">${v}/100</span></div>
+    ${filas.map(([n, val, t]) => `<div style="display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:center;font-size:13.5px">
+      <span class="muted">${n}</span><span style="display:flex;gap:8px;align-items:center;min-width:0"><span style="flex:none;width:44px;height:6px;border-radius:3px;background:var(--line);overflow:hidden"><span style="display:block;height:100%;width:${Math.round(val * 100)}%;background:var(--accent)"></span></span><span style="min-width:0">${H(t)}${val >= 0.15 ? ` <span class="muted">(${nivel(val)})</span>` : ""}</span></span></div>`).join("")}
+  </div>`;
+}
+function actividadHTML(spot, D, di, horaSel, nowH) {
+  const A = actividad(spot, D, di), W = 340, Hh = 112, pl = 4, pr = 4, pt = 8, pb = 20, bw = (W - pl - pr) / 24;
+  const y = (v) => pt + (1 - Math.max(v, 3) / 100) * (Hh - pt - pb);
+  const mejores = new Set(A.vent.flatMap(v => [...Array(v.fin - v.ini)].map((_, k) => v.ini + k)));
+  const hs = horaSel != null ? horaSel : A.vent.length ? A.vent[0].hpico : 12;
+  // Cada hora es una franja que se puede tocar (toda la altura, para que sea fácil con el dedo)
+  const bars = A.horas.map((v, h) => `<g data-hora="${h}" style="cursor:pointer" role="button" aria-label="${String(h).padStart(2, "0")}:00, actividad ${v} de 100">
+    <rect x="${(pl + h * bw).toFixed(1)}" y="0" width="${bw.toFixed(1)}" height="${Hh}" fill="${h === hs ? "var(--line)" : "transparent"}" opacity="${h === hs ? 0.6 : 1}"/>
+    <rect x="${(pl + h * bw + 1.5).toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw - 3).toFixed(1)}" height="${(Hh - pb - y(v)).toFixed(1)}" rx="2" fill="${mejores.has(h) ? "var(--accent)" : "var(--sea)"}" opacity="${h === hs ? 1 : mejores.has(h) ? 0.9 : 0.4}"/></g>`).join("");
+  const ticks = [0, 3, 6, 9, 12, 15, 18, 21].map(h => `<text x="${(pl + (h + 0.5) * bw).toFixed(1)}" y="${Hh - 6}" text-anchor="middle" font-size="9.5" fill="var(--muted)" font-family="var(--font-data)">${String(h).padStart(2, "0")}</text>`).join("");
+  const lunaEv = A.ev.filter(e => e.k !== "nadir").sort((a, b) => a.h - b.h).map(e => `${{ sale: "sale", cenit: "en lo alto", pone: "se pone" }[e.k]} ${hm(e.h)}`).join(" · ");
+  return `<section class="card stack">
+    <div class="sec-head"><div class="stack" style="gap:2px"><span class="label">Actividad de peces</span><h2>${A.nivel.txt}</h2></div><span class="chip ${A.nivel.k}">${H(A.luna.nombre)}</span></div>
+    <svg class="chart" viewBox="0 0 ${W} ${Hh}" aria-label="Actividad estimada de peces por hora. Toca una hora para ver el detalle.">${bars}${ticks}</svg>
+    <p class="small muted" style="margin-top:-4px">Toca una barra para ver por qué esa hora es buena o mala.</p>
+    ${detalleHora(A, hs)}
+    ${A.vent.length ? `<span class="label">Mejores horarios</span>` : ""}
+    ${A.vent.length ? `<div class="list">${A.vent.map(v => `<button class="row" data-hora="${v.hpico}" title="Ver condiciones a las ${hm(v.hpico)}"><span class="num" style="font-weight:600;min-width:98px">${hm(v.ini)}–${hm(v.fin)}</span><span class="txt"><span style="white-space:normal">${H(v.razones.join(", ") || "varios factores a favor")}</span></span></button>`).join("")}</div>` : ""}
+    <p class="small muted">Luna: ${lunaEv || "sin salida ni puesta este día"}. Estimación tradicional que combina teoría solunar${D.m ? ", movimiento de la marea" : ""} y luz del amanecer y atardecer. Es una guía, no una medición.</p>
+  </section>`;
+}
+
+function estadoMar(ola, viento) {
+  if (viento == null && ola == null) return { k: "warn", txt: "Sin datos", por: "falta de pronóstico para esta hora" };
+  if (ola == null) {
+    if (viento >= 35) return { k: "bad", txt: "No recomendado", por: "viento fuerte" };
+    if (viento >= 20) return { k: "warn", txt: "Regular", por: "viento moderado" };
+    return { k: "ok", txt: "Bueno", por: "viento suave" };
+  }
+  if (ola >= 2.5 || viento >= 35) return { k: "bad", txt: "No recomendado", por: ola >= 2.5 ? `olas de ${ola.toFixed(1)} m` : "viento fuerte" };
+  if (ola >= 1.5 || viento >= 20) return { k: "warn", txt: "Regular", por: ola >= 1.5 ? `olas de ${ola.toFixed(1)} m` : "viento moderado" };
+  return { k: "ok", txt: "Bueno", por: "mar y viento tranquilos" };
+}
+const rumbo = (deg) => ["N","NE","E","SE","S","SO","O","NO"][Math.round(deg / 45) % 8];
+
+/* ---------- Estado de la app ---------- */
+const st = { tab: "hoy", spot: "valparaiso", dia: 0, hora: null, medio: "mar", q: "" };
+try { const s = JSON.parse(localStorage.getItem("myv") || "{}"); if (s.spot && SPOTS.some(x => x.id === s.spot)) st.spot = s.spot; } catch (e) {}
+const save = () => { try { localStorage.setItem("myv", JSON.stringify({ spot: st.spot })); } catch (e) {} };
+const H = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const $ = (s) => document.querySelector(s);
+
+const ICON = {
+  hoy: '<path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/><circle cx="12" cy="12" r="4"/>',
+  mareas: '<path d="M2 12c2.5 0 2.5-3 5-3s2.5 3 5 3 2.5-3 5-3 2.5 3 5 3"/><path d="M2 18c2.5 0 2.5-3 5-3s2.5 3 5 3 2.5-3 5-3 2.5 3 5 3"/>',
+  especies: '<path d="M3 12c3-5 9-6 13-3l5-3-1 6 1 6-5-3c-4 3-10 2-13-3z"/><circle cx="8" cy="11" r="1"/>',
+  normas: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h7"/>',
+  fuentes: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+  capturas: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+};
+const svgI = (p, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const TABS = [["hoy", "Hoy"], ["mareas", "Mareas"], ["especies", "Especies"], ["capturas", "Capturas"], ["normas", "Normas"]];
+
+/* ---------- Vistas ---------- */
+// Índice del día de hoy dentro del pronóstico (null si el pronóstico guardado ya no incluye hoy)
+function idxHoy(D, now) { const i = Math.round((ymdDate(now.ymd) - ymdDate(D.t0)) / 864e5); return i >= 0 && i <= 6 ? i : null; }
+function nombreDia(D, i, now, corto) {
+  const h = idxHoy(D, now), d = ymdDate(addDays(D.t0, i));
+  if (i === h) return "hoy"; if (h !== null && i === h + 1) return "mañana";
+  return corto ? DIAS[d.getDay()] : `el ${DIAS[d.getDay()]} ${d.getDate()}`;
+}
+function diasHTML(D, now, conCoef = false) {
+  return `<div class="days" role="group" aria-label="Día">${[...Array(7)].map((_, i) => { const d = ymdDate(addDays(D.t0, i)), cf = conCoef && D.ext && D.ext.length ? coefMarea(D, i) : null;
+    return `<button type="button" data-dia="${i}" aria-pressed="${i === st.dia}"><small>${nombreDia(D, i, now, true)}</small><b>${d.getDate()}</b>${cf ? `<small class="num" title="Coeficiente de marea" style="letter-spacing:0">coef ${cf.c}</small>` : ""}</button>`; }).join("")}</div>`;
+}
+const HORAS = [6, 9, 12, 15, 18, 21];
+function vHoy() {
+  const spot = SPOTS.find(s => s.id === st.spot), D = datos(spot), now = nowCL();
+  const hoyI = idxHoy(D, now), fuera = hoyI === null, di = st.dia;
+  const esHoy = di === hoyI, ahora = esHoy && st.hora == null;
+  const hora = ahora ? now.h : (st.hora ?? 9);
+  const idx = di * 24 + hora;
+  const hoyDate = ymdDate(addDays(D.t0, di));
+  const cuando = nombreDia(D, di, now, false);
+  const ola = D.m ? D.m.wave_height[idx] : null, per = D.m ? D.m.wave_period[idx] : null;
+  const vi = D.w.wind[idx], dir = D.w.dir[idx], temp = D.w.temp[idx];
+  const em = estadoMar(ola, vi);
+  const medio = esMar(spot) ? "mar" : "dulce";
+  const lista = ESPECIES.filter(s => s.medio === medio).map(s => ({ s, e: estado(s, hoyDate, spot.tipo) }));
+  const cerradas = lista.filter(x => x.e.k === "bad"), devol = lista.filter(x => x.e.k === "warn");
+  let mareaHTML = "";
+  if (D.m) {
+    const dia = addDays(D.t0, di);
+    const ex = D.ext.filter(e => e.ymd === dia);
+    const ahoraT = (Date.now() - medianocheCL(D.t0)) / 3.6e6, pasada = (e) => esHoy && e.t < ahoraT;
+    const prox = esHoy ? D.ext.find(e => e.t >= ahoraT) : null, cf = coefMarea(D, di);
+    mareaHTML = `<section class="stack"><div class="sec-head"><h3>Mareas de ${cuando.replace(/^el /, "")}</h3><button class="row" style="width:auto;padding:0;color:var(--sea);font-size:14px" data-go="mareas">Ver curva →</button></div>
+      ${prox ? `<div class="callout info" style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span><strong>${prox.tipo} en ${enCuanto(Math.round((prox.t - ahoraT) * 60))}</strong><br><span class="small muted">a las ${prox.hora} · ${fmtH(prox.h)}</span></span><span class="small" style="text-align:right">${ahoraT < prox.t && D.ext.indexOf(prox) > 0 && D.ext[D.ext.indexOf(prox) - 1].h < prox.h ? "Marea subiendo ↑" : "Marea bajando ↓"}</span></div>` : ""}
+      <div class="tide-next">${ex.map(e => `<div class="card" ${pasada(e) ? 'style="opacity:.5"' : ""}><span class="label">${e.tipo}${pasada(e) ? " · ya pasó" : ""}</span><b>${e.hora}</b><span class="small muted num">${fmtH(e.h)}</span></div>`).join("")}</div>
+      ${cf ? `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px"><span><span class="label">Coeficiente de marea</span><br><span class="small muted">${H(cf.txt)} · diferencia de ${cf.rango.toFixed(2)} m entre pleamar y bajamar</span></span><span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><b class="num" style="font-size:24px;font-weight:500">${cf.c}</b><span class="chip ${cf.k}" style="font-size:11px">${cf.c >= 90 ? "más movimiento" : cf.c <= 50 ? "poco movimiento" : "normal"}</span></span></div>` : ""}</section>`;
+  }
+  const horasHTML = `<div class="seg" role="group" aria-label="Hora" style="display:flex;overflow-x:auto;scrollbar-width:none;margin-top:14px">
+    ${esHoy ? `<button type="button" data-hora="ahora" aria-pressed="${ahora}">Ahora</button>` : ""}
+    ${HORAS.map(h => `<button type="button" data-hora="${h}" aria-pressed="${!ahora && hora === h}" class="num">${String(h).padStart(2, "0")}:00</button>`).join("")}</div>`;
+  return `<div class="stack-lg view">
+    <section class="hero">
+      <span class="label">${H(TIPO_NOMBRE[spot.tipo])} · Región de ${H(spot.region)}</span>
+      <h1>${H(spot.nombre)}</h1>
+      ${badge(D, fuera)}
+    </section>
+
+    ${diasHTML(D, now)}
+
+    <section class="card">
+      <div class="verdict">
+        <div class="dot-big ${em.k}">${svgI(em.k === "ok" ? '<path d="M5 12l5 5 9-10"/>' : em.k === "warn" ? '<path d="M12 7v6M12 17h.01"/>' : '<path d="M6 6l12 12M18 6L6 18"/>', 24)}</div>
+        <div><span class="label">${esMar(spot) ? "Estado del mar" : "Condiciones"} ${ahora ? "ahora" : `${cuando} a las ${String(hora).padStart(2, "0")}:00`}</span><h2>${em.txt}</h2><p class="small muted">Por ${em.por}.</p></div>
+      </div>
+      ${horasHTML}
+      <div class="metrics">
+        ${D.m ? `<div class="metric"><span>Ola</span><b>${ola != null ? ola.toFixed(1) + " m" : "—"}</b><span>${per != null ? `cada ${Math.round(per)} s` : "sin dato"}</span></div>` : ""}
+        <div class="metric"><span>Viento</span><b>${vi != null ? Math.round(vi) : "—"}</b><span>km/h ${dir != null ? rumbo(dir) : ""}</span></div>
+        <div class="metric"><span>Temperatura</span><b>${temp != null ? Math.round(temp) + "°" : "—"}</b><span>aire</span></div>
+        ${D.m ? "" : `<div class="metric"><span>Luz</span><b>${D.w.sunrise[di].slice(11)}</b><span>a ${D.w.sunset[di].slice(11)}</span></div>`}
+      </div>
+    </section>
+
+    ${actividadHTML(spot, D, di, hora, now.h)}
+
+    ${mareaHTML}
+
+    ${lunaHTML(spot, D, di)}
+
+    <section class="stack">
+      <div class="sec-head"><h3>¿Qué puedo llevarme ${cuando}?</h3><span class="small muted">${esMar(spot) ? "Mar" : "Agua dulce"}</span></div>
+      ${cerradas.length ? `<div class="callout bad"><strong>${cerradas.length === 1 ? "1 especie no se puede pescar" : cerradas.length + " especies no se pueden pescar"} ${cuando}.</strong> Si la capturas, devuélvela viva al agua.</div>` : `<div class="callout info">No hay especies en veda ${cuando} para este tipo de agua.</div>`}
+      <div class="list">${[...cerradas, ...devol].map(x => rowSp(x.s, x.e)).join("")}</div>
+      ${esMar(spot) ? `<p class="small muted">${MAX_MAR}</p>` : `<p class="small muted">En ríos, lagos y embalses no se puede pescar de noche a menos de 500 m de una desembocadura (21:00 a 06:00).</p>`}
+      <button class="row card" style="justify-content:space-between;border:1px solid var(--line);border-radius:var(--r)" data-go="especies"><span><strong>¿Qué pesqué?</strong><br><span class="small muted">Busca por nombre o mira las fotos</span></span><span style="color:var(--accent)">→</span></button>
+    </section>
+
+    ${licCard(spot, hoyDate)}
+
+    ${anuncioHTML()}
+  </div>`;
+}
+function badge(D, fuera) {
+  const g = SNAP.generado; const f = `${+g.slice(8, 10)} ${MESES[+g.slice(5, 7) - 1].slice(0, 3)} ${g.slice(11, 16)}`;
+  const credito = `datos: <a href="https://api.met.no/" target="_blank" rel="noopener">MET Norway</a>, NOAA y UHSLC`;
+  return D.fuente === "live" ? `<span class="data-badge live"><i></i><span>Pronóstico en vivo · ${credito}</span></span>`
+    : `<span class="data-badge"><i></i><span>Sin conexión: pronóstico guardado el ${f}${fuera ? " (desactualizado)" : ""} · ${credito}</span></span>`;
+}
+function rowSp(s, e) {
+  const f = foto(s);
+  return `<button class="row" data-sp="${s.id}">${f ? `<img class="thumb" src="${f.archivo}" alt="" loading="lazy">` : `<span class="thumb"></span>`}
+    <span class="txt"><strong>${H(s.nombre)}</strong><span>${H(e.det)}</span></span><span class="chip ${e.k}">${H(e.txt.split(" (")[0])}</span></button>`;
+}
+
+function vMareas() {
+  const spot = SPOTS.find(s => s.id === st.spot), D = datos(spot), now = nowCL();
+  const horaSel = st.hora ?? (st.dia === idxHoy(D, now) ? now.h : null);
+  const activ = actividadHTML(spot, D, st.dia, horaSel, now.h);
+  if (!D.m) return `<div class="stack-lg view"><section class="hero"><span class="label">Mareas</span><h1>${H(spot.nombre)}</h1></section>
+    ${diasHTML(D, now)}
+    <div class="callout info">En ríos, lagos y embalses no hay marea. Abajo tienes la actividad de peces, la luna y el viento hora a hora.</div>${activ}${lunaHTML(spot, D, st.dia)}${horas(D, st.dia)}</div>`;
+  const ex = D.ext;
+  const dia = addDays(D.t0, st.dia);
+  const serie = D.m.sea_level_height_msl;
+  const all = serie.filter(v => v != null); const lo = Math.min(...all), hi = Math.max(...all);
+  const W = 340, Hh = 160, pl = 34, pr = 8, pt = 22, pb = 26;
+  const x = (h) => pl + (h / 24) * (W - pl - pr), y = (v) => pt + (1 - (v - lo) / (hi - lo)) * (Hh - pt - pb);
+  const pts = []; for (let h = 0; h <= 24; h++) { const v = serie[st.dia * 24 + h]; if (v != null) pts.push([x(h), y(v)]); }
+  const path = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const area = path + ` L${pts[pts.length - 1][0].toFixed(1)} ${Hh - pb} L${pts[0][0].toFixed(1)} ${Hh - pb} Z`;
+  const delDia = ex.filter(e => e.ymd === dia);
+  const nowX = dia === now.ymd ? x(now.h + 0.5) : null;
+  const ticks = [0, 6, 12, 18, 24];
+  const yt = [lo, 0, hi].filter((v, i, a) => a.indexOf(v) === i && (i !== 1 || (v > lo + 0.1 && v < hi - 0.1)));
+  const sr = D.w.sunrise[st.dia].slice(11), ss = D.w.sunset[st.dia].slice(11);
+  const sx = (t) => { const [h, m] = t.split(":").map(Number); return x(h + m / 60); };
+  const chart = `<svg class="chart" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Curva de marea del día">
+    <rect x="${pl}" y="${pt}" width="${(sx(sr) - pl).toFixed(1)}" height="${Hh - pt - pb}" fill="var(--line)" opacity=".45"/>
+    <rect x="${sx(ss).toFixed(1)}" y="${pt}" width="${(W - pr - sx(ss)).toFixed(1)}" height="${Hh - pt - pb}" fill="var(--line)" opacity=".45"/>
+    ${yt.map(v => `<line x1="${pl}" x2="${W - pr}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--line)" stroke-dasharray="${v === 0 ? "0" : "2 3"}"/><text x="${pl - 6}" y="${(y(v) + 3.5).toFixed(1)}" text-anchor="end" font-size="9.5" fill="var(--muted)" font-family="var(--font-data)">${v.toFixed(1)}</text>`).join("")}
+    ${ticks.map(h => `<text x="${x(h).toFixed(1)}" y="${Hh - 8}" text-anchor="middle" font-size="9.5" fill="var(--muted)" font-family="var(--font-data)">${String(h % 24).padStart(2, "0")}h</text>`).join("")}
+    <path d="${area}" fill="var(--sea)" opacity=".14"/>
+    <path d="${path}" fill="none" stroke="var(--sea)" stroke-width="2"/>
+    ${nowX ? `<line x1="${nowX.toFixed(1)}" x2="${nowX.toFixed(1)}" y1="${pt}" y2="${Hh - pb}" stroke="var(--accent)" stroke-width="1.5"/><text x="${nowX.toFixed(1)}" y="${pt - 3}" text-anchor="middle" font-size="9.5" fill="var(--accent)" font-family="var(--font-body)" font-weight="600">ahora</text>` : ""}
+    ${delDia.map(e => { const hx = x(e.t - st.dia * 24), hy = y(e.h); return `<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="3.5" fill="var(--surface)" stroke="var(--sea)" stroke-width="2"/><text x="${Math.min(Math.max(hx, pl + 14), W - pr - 14).toFixed(1)}" y="${(e.tipo === "Pleamar" ? hy - 8 : hy + 15).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--fg)" font-family="var(--font-data)">${e.hora}</text>`; }).join("")}
+  </svg>`;
+  return `<div class="stack-lg view">
+    <section class="hero"><span class="label">Mareas · ${H(spot.nombre)}</span><h1>Tabla de 7 días</h1>${badge(D, false)}</section>
+    ${diasHTML(D, now, true)}
+    <section class="card stack">
+      ${chart}
+      <p class="small muted">Altura sobre el nivel medio del mar, en metros. Las franjas grises son horas de noche.</p>
+      ${(() => { const cf = coefMarea(D, st.dia); return cf ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--line);padding-top:12px">
+        <span><span class="label">Coeficiente de marea</span><br><span class="small muted">${H(cf.txt)} · rango de ${cf.rango.toFixed(2)} m</span></span><b class="num" style="font-size:24px;font-weight:500">${cf.c}</b></div>
+        <p class="small muted">Escala de 20 a 120. Sobre 90 son mareas vivas (cerca de luna nueva o llena): el agua sube y baja más y se mueve más rápido. Bajo 50 son mareas muertas.</p>` : ""; })()}
+    </section>
+    <section class="card" style="padding:6px 10px"><div class="scroll-x"><table class="tbl"><thead><tr><th>Marea</th><th>Hora</th><th class="r">Altura</th></tr></thead><tbody>
+      ${delDia.map(e => `<tr><td><span class="chip ${e.tipo === "Pleamar" ? "info" : "warn"}" style="font-weight:600">${e.tipo}</span></td><td class="num">${e.hora}</td><td class="r num">${fmtH(e.h)}</td></tr>`).join("")}
+    </tbody></table></div></section>
+    ${activ}
+    ${lunaHTML(spot, D, st.dia)}
+    ${horas(D, st.dia)}
+    <div class="callout warn small"><strong>Ojo:</strong> estas mareas se calculan con las mediciones del mareógrafo de Valparaíso (UHSLC). En otros puntos de la costa central la hora puede variar unos minutos. Altura en metros sobre el nivel medio del mar, no sobre el nivel de reducción de las cartas del SHOA. No usar para navegar.</div>
+  </div>`;
+}
+function horas(D, dia) {
+  const hs = [5, 7, 9, 11, 13, 15, 17, 19, 21];
+  const mx = Math.max(...hs.map(h => D.m ? D.m.wave_height[dia * 24 + h] || 0 : 0), 0.5);
+  return `<section class="stack"><h3>Hora a hora</h3><div class="hours">${hs.map(h => { const i = dia * 24 + h; const o = D.m ? D.m.wave_height[i] : null;
+    return `<div><span class="muted">${String(h).padStart(2, "0")}h</span>${o != null ? `<span class="bar-w" style="height:${Math.max(4, o / mx * 34).toFixed(0)}px"></span><b>${o.toFixed(1)}</b><span class="muted" style="font-size:10.5px">m ola</span>` : ""}<b>${D.w.wind[i] != null ? Math.round(D.w.wind[i]) : "—"}</b><span class="muted" style="font-size:10.5px">km/h</span></div>`; }).join("")}</div></section>`;
+}
+
+function vEspecies() {
+  const spot = SPOTS.find(s => s.id === st.spot), now = nowCL(), hoy = ymdDate(now.ymd);
+  const q = st.q.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const norm = (t) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const lista = ESPECIES.filter(s => (q ? true : s.medio === st.medio) && (!q || norm([s.nombre, ...s.otros, s.sci].join(" ")).includes(q)));
+  return `<div class="stack-lg view">
+    <section class="hero"><span class="label">¿Qué pesqué?</span><h1>Especies</h1><p class="muted small">Talla mínima, cuota diaria y estado de hoy según la planilla oficial de Sernapesca 2026-2027.</p></section>
+    <div class="stack">
+      <label class="search">${svgI('<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>', 18)}<input id="q" type="search" placeholder="Corvina, lenguado, trucha…" value="${H(st.q)}" autocomplete="off" aria-label="Buscar especie"></label>
+      <div class="seg" role="group" aria-label="Tipo de agua">${[["mar", "Mar"], ["dulce", "Agua dulce"]].map(([k, l]) => `<button type="button" data-medio="${k}" aria-pressed="${!q && st.medio === k}">${l}</button>`).join("")}</div>
+    </div>
+    <div class="grid">${lista.map(s => { const e = estado(s, hoy, s.medio === "dulce" && !esMar(spot) ? spot.tipo : null); const f = foto(s);
+      const nf = fotos(s).length;
+      return `<button class="sp" data-sp="${s.id}">${f ? `<span class="phw"><img class="ph" src="${f.archivo}" alt="${H(s.nombre)}" loading="lazy">${nf > 1 ? `<span class="n num">${nf} fotos</span>` : ""}</span>` : `<span class="ph-empty">Falta foto con licencia</span>`}
+        <span class="b"><span class="chip ${e.k}">${H(e.txt.split(" (")[0])}</span><strong>${H(s.nombre)}</strong><em>${H(s.sci)}</em>
+        <span class="kv"><span>Talla <b>${H(s.talla.replace(" (longitud total)", "").replace(" (a la horquilla)", "").replace("Sin talla mínima", "—"))}</b></span><span>Cuota <b>${H(s.cuota.replace(" por día", "").replace("Sin cuota específica", "—").replace("Devolver todos", "0"))}</b></span></span></span></button>`; }).join("") || `<p class="muted">No encontramos esa especie. Prueba con otro nombre.</p>`}</div>
+  </div>`;
+}
+function ficha(id) {
+  const s = SPMAP[id]; if (!s) return;
+  const spot = SPOTS.find(x => x.id === st.spot), hoy = ymdDate(nowCL().ymd);
+  const e = estado(s, hoy, s.medio === "dulce" && !esMar(spot) ? spot.tipo : null), f = foto(s);
+  const el = $("#sheet");
+  el.innerHTML = `<div class="sheet-in">
+    <button class="back" type="button" data-close>${svgI('<path d="M15 6l-6 6 6 6"/>', 18)}Volver</button>
+    <div>${carrusel(s)}</div>
+    <div class="stack" style="gap:6px"><span class="chip ${e.k}" style="align-self:flex-start">${H(e.txt)}</span><h1 style="font-size:28px">${H(s.nombre)}</h1>
+      <p class="muted"><em>${H(s.sci)}</em>${s.otros.length ? " · También: " + H(s.otros.join(", ")) : ""}</p></div>
+    <div class="callout ${e.k === "bad" ? "bad" : e.k === "warn" ? "warn" : "info"}">${H(e.det)}</div>
+    <div class="facts">
+      <div><span class="label">Talla mínima</span><b>${H(s.talla)}</b></div>
+      <div><span class="label">Máximo por día</span><b>${H(s.cuota)}</b></div>
+      <div class="wide"><span class="label">Dónde</span><span>${s.medio === "mar" ? "Mar: aguas interiores, mar territorial y zona económica exclusiva" : "Ríos, lagos, lagunas y embalses"}</span></div>
+    </div>
+    <section class="stack"><h3>Cómo reconocerla</h3><ul class="clean">${s.rasgos.map(r => `<li>${H(r)}</li>`).join("")}</ul></section>
+    ${s.confunde.length ? `<section class="stack"><h3>Se confunde con</h3><div class="list">${s.confunde.map(c => { const o = SPMAP[c.id]; const fo = foto(o); return `<button class="row" data-sp="${o.id}">${fo ? `<img class="thumb" src="${fo.archivo}" alt="">` : `<span class="thumb"></span>`}<span class="txt"><strong>${H(o.nombre)}</strong><span style="white-space:normal">${H(c.como)}</span></span></button>`; }).join("")}</div></section>` : ""}
+    ${(s.notas || s.medio === "mar") ? `<section class="stack"><h3>A considerar</h3><ul class="clean">${(s.notas || []).map(n => `<li>${H(n)}</li>`).join("")}${s.medio === "mar" && s.norma.includes("443") ? `<li>${MAX_MAR}</li>` : ""}<li>Prohibido vender lo que pescas en forma recreativa.</li></ul></section>` : ""}
+    <section class="card stack" style="gap:6px"><span class="label">Fuente legal</span><p>${H(s.norma)}</p>
+      <p class="small muted">Verificado el ${VERIFICADO} contra la planilla de Sernapesca (versión del 11-09-2026). <a href="${PLANILLA}" target="_blank" rel="noopener">Ver planilla oficial</a></p></section>
+  </div>`;
+  el.hidden = false; el.scrollTop = 0; document.body.style.overflow = "hidden";
+  carruselInit(s);
+  el.querySelector("[data-close]").focus();
+}
+function cerrarFicha() { $("#sheet").hidden = true; document.body.style.overflow = ""; }
+
+/* ---------- Mi licencia (se guarda solo en este dispositivo, en IndexedDB) ---------- */
+const SERNA_LIC = "https://pescarecreativa.sernapesca.cl";
+let LIC = null; // { img, vence:"YYYY-MM-DD", desde, aguas, numero, titular, archivo, guardada }
+const idb = () => new Promise((ok, ko) => { try { const r = indexedDB.open("myv", 3); r.onupgradeneeded = () => { const db = r.result; if (!db.objectStoreNames.contains("kv")) db.createObjectStore("kv"); if (!db.objectStoreNames.contains("capturas")) db.createObjectStore("capturas", { keyPath: "id" }); if (!db.objectStoreNames.contains("carpetas")) db.createObjectStore("carpetas", { keyPath: "id" }); }; r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); } catch (e) { ko(e); } });
+async function idbGet(k) { const db = await idb(); return new Promise((ok, ko) => { const q = db.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => ok(q.result); q.onerror = () => ko(q.error); }); }
+async function idbSet(k, v) { const db = await idb(); return new Promise((ok, ko) => { const tx = db.transaction("kv", "readwrite"); v === undefined ? tx.objectStore("kv").delete(k) : tx.objectStore("kv").put(v, k); tx.oncomplete = () => ok(); tx.onerror = () => ko(tx.error); }); }
+async function licCargar() { try { LIC = (await idbGet("licencia")) || null; } catch (e) { LIC = null; } render(); }
+async function licGuardar() { try { await idbSet("licencia", LIC || undefined); return true; } catch (e) { return false; } }
+
+function licEstado(hoy) {
+  if (!LIC) return null;
+  if (!LIC.vence) return { k: "warn", txt: "Falta la fecha", det: "Indica hasta cuándo es válida para avisarte antes de que venza." };
+  const v = ymdDate(LIC.vence); const n = Math.round((v - hoy) / 864e5);
+  if (n < 0) return { k: "bad", txt: "Vencida", det: `Venció el ${fmtD(v)} ${v.getFullYear()}. Renuévala antes de pescar.` };
+  if (n <= 30) return { k: "warn", txt: n === 0 ? "Vence hoy" : `Vence en ${n} días`, det: `Es válida hasta el ${fmtD(v)} ${v.getFullYear()}.` };
+  return { k: "ok", txt: "Vigente", det: `Válida hasta el ${fmtD(v)} ${v.getFullYear()} (${n} días).` };
+}
+const aguasOk = (spot) => {
+  if (!LIC || !LIC.aguas) return true;
+  const a = LIC.aguas.toLowerCase(); const mar = /marin/.test(a), dulce = /continental|terrestre/.test(a);
+  if (mar && dulce) return true;
+  return esMar(spot) ? mar || !dulce : dulce || !mar;
+};
+function licCard(spot, hoy) {
+  if (!LIC) return `<button class="row card" style="border:1px solid var(--line);border-radius:var(--r);gap:14px" data-lic>
+      <span class="dot-big warn" style="width:40px;height:40px">${svgI('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h6M7 14h4"/>', 20)}</span>
+      <span class="txt"><strong>Agrega tu licencia de pesca</strong><span style="white-space:normal">Sube el PDF de Sernapesca y te avisamos antes de que venza. Queda guardada solo en este teléfono.</span></span><span style="color:var(--accent)">→</span></button>`;
+  const e = licEstado(hoy), ok = aguasOk(spot);
+  return `<button class="row card" style="border:1px solid var(--line);border-radius:var(--r);gap:14px;align-items:flex-start" data-lic>
+      <span class="dot-big ${!ok ? "bad" : e.k}" style="width:40px;height:40px">${svgI('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h6M7 14h4"/>', 20)}</span>
+      <span class="txt"><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><strong>Mi licencia</strong><span class="chip ${e.k}">${H(e.txt)}</span></span>
+      <span style="white-space:normal">${!ok ? `Tu licencia es para ${H(LIC.aguas.toLowerCase())} y este lugar es ${esMar(spot) ? "de mar" : "de agua dulce"}: aquí no te sirve.` : H(e.det)}</span></span><span style="color:var(--accent)">→</span></button>`;
+}
+
+function loadScript(src) { return new Promise((ok, ko) => { if (document.querySelector(`script[src="${src}"]`)) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => ko(new Error("No se pudo cargar " + src)); document.head.appendChild(s); }); }
+const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+async function pdfLib() {
+  await loadScript(PDFJS + "pdf.min.js");
+  await loadScript(PDFJS + "pdf.worker.min.js"); // corre en el hilo principal: el PDF es de una página
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js";
+  return window.pdfjsLib;
+}
+// Recorta los márgenes blancos de la hoja A4 para mostrar solo la licencia
+function recortar(canvas) {
+  const ctx = canvas.getContext("2d"), { width: w, height: h } = canvas, d = ctx.getImageData(0, 0, w, h).data;
+  let x0 = w, y0 = h, x1 = 0, y1 = 0;
+  for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) { const i = (y * w + x) * 4; if (d[i] < 235 || d[i + 1] < 235 || d[i + 2] < 235) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
+  if (x1 <= x0 || y1 <= y0) return canvas;
+  const m = 12, c = document.createElement("canvas"); c.width = Math.min(w, x1 - x0 + 2 * m); c.height = Math.min(h, y1 - y0 + 2 * m);
+  const cx = c.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, c.width, c.height); cx.drawImage(canvas, Math.max(0, x0 - m), Math.max(0, y0 - m), c.width, c.height, 0, 0, c.width, c.height);
+  return c;
+}
+const ddmmyyyy = (d, m, y) => `${y}-${m}-${d}`;
+function leerCampos(txt) {
+  const t = txt.replace(/\s+/g, " ");
+  const out = {};
+  const v = t.match(/Vigencia\s*(\d{2})\/(\d{2})\/(\d{4})\s*hasta\s*(\d{2})\/(\d{2})\/(\d{4})/i);
+  if (v) { out.desde = ddmmyyyy(v[1], v[2], v[3]); out.vence = ddmmyyyy(v[4], v[5], v[6]); }
+  const a = t.match(/\b(Aguas\s+(?:Marinas|Continentales|Terrestres)(?:\s+y\s+(?:Marinas|Continentales|Terrestres))?)/i); if (a) out.aguas = a[1];
+  const n = t.match(/Licencia\s*N[°º]?\s*:?\s*(\d{4,})/i); if (n) out.numero = n[1];
+  const nom = t.match(/Nombres:\s*([A-Za-zÁÉÍÓÚÑáéíóúñ ]+?)\s+N[º°]/), ap = t.match(/Primer apellido:\s*([A-Za-zÁÉÍÓÚÑáéíóúñ]+)/);
+  if (nom && ap) out.titular = `${nom[1].trim()} ${ap[1]}`;
+  return out;
+}
+async function procesarArchivo(file) {
+  const msg = $("#lic-msg"); const say = (t, k = "info") => { if (msg) { msg.className = "callout small " + k; msg.textContent = t; msg.hidden = false; } };
+  try {
+    say("Leyendo tu licencia…");
+    let img, campos = {};
+    if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
+      const lib = await pdfLib();
+      const pdf = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+      const page = await pdf.getPage(1);
+      const tc = await page.getTextContent(); campos = leerCampos(tc.items.map(i => i.str).join(" "));
+      const vp = page.getViewport({ scale: 2.2 }), cv = document.createElement("canvas"); cv.width = vp.width; cv.height = vp.height;
+      // intent "print" evita requestAnimationFrame, que se detiene si la app queda en segundo plano
+      const tarea = page.render({ canvasContext: cv.getContext("2d"), viewport: vp, intent: "print" });
+      const listo = await Promise.race([tarea.promise.then(() => true), new Promise(r => setTimeout(() => r(false), 15000))]);
+      if (listo) img = recortar(cv).toDataURL("image/jpeg", 0.9); else tarea.cancel(); // sin imagen, igual se guardan los datos
+    } else if (file.type.startsWith("image/")) {
+      img = await new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = ko; r.readAsDataURL(file); });
+    } else { say("Ese archivo no es un PDF ni una imagen. Sube el PDF que te envió Sernapesca o una foto de la licencia.", "bad"); return; }
+    LIC = { img, archivo: file.name, guardada: new Date().toISOString(), ...campos };
+    const ok = await licGuardar();
+    abrirLicencia(campos.vence ? (ok ? "" : "No pudimos guardarla en este navegador; se borrará al cerrar la app.") : "No encontramos la fecha de vigencia en el archivo. Complétala abajo.");
+    render();
+  } catch (e) { say("No pudimos leer el archivo. Revisa que sea el PDF original de Sernapesca o sube una foto de la licencia.", "bad"); }
+}
+
+function abrirLicencia(aviso = "") {
+  const el = $("#sheet"), hoy = ymdDate(nowCL().ymd), e = licEstado(hoy);
+  const fecha = (s) => s ? (([y, m, d]) => `${d}/${m}/${y}`)(s.split("-")) : "—";
+  el.innerHTML = `<div class="sheet-in">
+    <button class="back" type="button" data-close>${svgI('<path d="M15 6l-6 6 6 6"/>', 18)}Volver</button>
+    <div class="stack" style="gap:6px"><span class="label">Documento</span><h1 style="font-size:28px">Mi licencia de pesca</h1></div>
+    ${LIC ? `
+      <div class="callout ${e.k === "bad" ? "bad" : e.k === "warn" ? "warn" : "info"}"><strong>${H(e.txt)}.</strong> ${H(e.det)}${e.k === "bad" ? ` <a href="${SERNA_LIC}" target="_blank" rel="noopener">Renovar en Sernapesca</a>` : ""}</div>
+      ${aviso ? `<div class="callout warn small">${H(aviso)}</div>` : ""}
+      ${LIC.img ? `<figure style="margin:0"><img src="${LIC.img}" alt="Licencia de pesca recreativa" style="width:100%;border-radius:var(--r);border:1px solid var(--line);background:#fff"><figcaption class="credit">Muéstrala junto a tu cédula si te la pide un fiscalizador. Gira el teléfono para verla más grande.</figcaption></figure>` : `<div class="callout warn small">No pudimos dibujar la licencia, pero sí leímos sus datos. Vuelve a subir el PDF con la app abierta en pantalla para ver la imagen.</div>`}
+      <div class="facts">
+        <div><span class="label">Tipo de aguas</span><b style="font-family:var(--font-body);font-size:15px;font-weight:600">${H(LIC.aguas || "—")}</b></div>
+        <div><span class="label">N.° de licencia</span><b>${H(LIC.numero || "—")}</b></div>
+        <div><span class="label">Desde</span><b>${fecha(LIC.desde)}</b></div>
+        <div><span class="label">Hasta</span><b>${fecha(LIC.vence)}</b></div>
+        ${LIC.titular ? `<div class="wide"><span class="label">Titular</span><span>${H(LIC.titular)}</span></div>` : ""}
+      </div>
+      <details${LIC.vence ? "" : " open"}><summary>Corregir datos</summary><div class="in">
+        <label class="stack" style="gap:4px"><span class="label">Válida hasta</span><input id="lic-vence" type="date" value="${H(LIC.vence || "")}" class="search" style="border-radius:10px"></label>
+        <label class="stack" style="gap:4px"><span class="label">Tipo de aguas</span><select id="lic-aguas" class="search" style="border-radius:10px">${["Aguas Marinas", "Aguas Continentales", "Aguas Marinas y Continentales"].map(a => `<option ${LIC.aguas && LIC.aguas.toLowerCase() === a.toLowerCase() ? "selected" : ""}>${a}</option>`).join("")}</select></label>
+        <button type="button" class="back" data-lic-save style="align-self:flex-start">Guardar cambios</button>
+      </div></details>
+      <div class="stack">
+        <label class="back" style="cursor:pointer">${svgI('<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>', 18)}Reemplazar por la licencia nueva<input id="lic-file" type="file" accept="application/pdf,image/*" hidden></label>
+        <div id="lic-del-wrap"><button type="button" class="back" data-lic-del style="color:var(--bad)">Borrar licencia de este teléfono</button></div>
+      </div>`
+    : `
+      <p>Sube el PDF que te envió Sernapesca al comprar la licencia. La app lo lee, muestra la licencia lista para enseñarla en un control y te avisa cuando esté por vencer.</p>
+      <label class="card stack" style="align-items:center;text-align:center;gap:8px;cursor:pointer;border-style:dashed">
+        <span style="color:var(--accent)">${svgI('<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>', 28)}</span>
+        <strong>Elegir archivo</strong><span class="small muted">PDF de Sernapesca o una foto de la licencia</span>
+        <input id="lic-file" type="file" accept="application/pdf,image/*" hidden></label>
+      <p class="small muted">¿Aún no tienes? Se compra en <a href="${SERNA_LIC}" target="_blank" rel="noopener">pescarecreativa.sernapesca.cl</a>. No la necesitan menores de 12 años, mayores de 65 ni personas inscritas en el Registro Nacional de la Discapacidad.</p>`}
+    <div id="lic-msg" class="callout small info" hidden></div>
+    <div class="callout info small"><strong>Privacidad.</strong> Tu licencia tiene tu RUT y tu dirección. Por eso se guarda solo en este teléfono, dentro del navegador: no se sube a ningún servidor ni la ve nadie más. Si borras los datos del navegador, tendrás que volver a subirla.</div>
+  </div>`;
+  el.hidden = false; el.scrollTop = 0; document.body.style.overflow = "hidden";
+  const f = $("#lic-file"); if (f) f.addEventListener("change", () => f.files[0] && procesarArchivo(f.files[0]));
+}
+
+function vNormas() {
+  const hoy = ymdDate(nowCL().ymd), sal = salmonSeason(hoy);
+  return `<div class="stack-lg view">
+    <section class="hero"><span class="label">Reglas generales</span><h1>Lo básico antes de salir</h1><p class="muted small">Explicado simple. Cada punto indica la norma de donde sale.</p></section>
+    ${INSTALADA() ? "" : `<section class="card stack">
+      <h3>Instala la app en tu celular</h3>
+      <p class="small">Queda con su ícono en la pantalla de inicio, se abre a pantalla completa y funciona sin señal en la playa.</p>
+      ${PROMPT_INSTALAR ? `<button type="button" class="back" data-instalar style="align-self:stretch;justify-content:center;background:var(--fg);color:var(--bg);border-color:var(--fg);padding:12px">Instalar jPique</button>`
+        : `<p class="small muted"><strong>Android (Chrome):</strong> menú ⋮ → <em>Agregar a la pantalla principal</em> o <em>Instalar app</em>.<br><strong>iPhone (Safari):</strong> botón Compartir → <em>Agregar a inicio</em>.</p>`}
+    </section>`}
+    <div class="stack">
+      <details open><summary>Licencia de pesca</summary><div class="in">
+        <p>Es obligatoria, personal e intransferible. Debes llevarla mientras pescas y mientras transportas lo capturado, junto a tu carnet o pasaporte.</p>
+        <p><strong>No la necesitan:</strong> menores de 12 años, mayores de 65 y personas inscritas en el Registro Nacional de la Discapacidad.</p>
+        <p>Se obtiene en <a href="https://pescarecreativa.sernapesca.cl" target="_blank" rel="noopener">pescarecreativa.sernapesca.cl</a>. <span class="muted">Ley N.° 20.256.</span></p></div></details>
+      <details open><summary>En el mar</summary><div class="in">
+        <p>Cada especie tiene su propia cuota diaria (ver Especies), y además <strong>la suma total no puede pasar de 10 ejemplares por jornada</strong>.</p>
+        <p>Pejegallo y tollo común: se pueden pescar, pero hay que devolverlos todos.</p>
+        <p>Corvina: veda biológica del 1 de octubre al 30 de noviembre en todo Chile.</p>
+        <p>Buenas prácticas pedidas por la norma: devolver vivos los peces bajo talla, llevarse la basura, devolver la carnada viva que sobre y no pescar cerca de chungungos o pingüinos alimentándose.</p>
+        <p class="muted">Res. Ex. N.° 443/2025 de Subpesca (publicada en el Diario Oficial el 25-02-2025).</p></div></details>
+      <details><summary>Truchas y salmones (ríos, lagos y embalses)</summary><div class="in">
+        <p>Temporada en la zona central: <strong>segundo viernes de noviembre al primer domingo de mayo</strong>. ${sal.open ? `Abierta hasta el ${fmtD(sal.until)}.` : `Este año abre el <strong>${fmtD(sal.next)}</strong>.`}</p>
+        <p>Máximo 3 ejemplares o 15 kilos por día. Solo señuelo artificial con un anzuelo simple o un triple (araña), plomada de hasta 100 g, una caña a la vez y chinguillo de hasta 100 cm de largo y 70 cm de diámetro.</p>
+        <p>Prohibido pescar de 21:00 a 06:00 a menos de 500 m de desembocaduras de ríos y esteros y de desagües de lagos y tranques.</p>
+        <p class="muted">D.S. N.° 320 de 1981, modificado por D.S. 425 y 149 de 1986.</p></div></details>
+      <details><summary>Zonas donde no se puede pescar</summary><div class="in">
+        <p><strong>Estero Ojos de Agua</strong> y sus afluentes (Región de Valparaíso, hasta su llegada al río Juncal): prohibida toda pesca en forma indefinida. <span class="muted">Decreto N.° 421 de 1977.</span></p></div></details>
+      <details><summary>Peces nativos de agua dulce protegidos</summary><div class="in">
+        <p>30 especies nativas (bagres, carmelitas, pochas, peladillas, el cauque del Maule, la trucha negra y otras) tienen veda extractiva por 15 años, del 6 de octubre de 2011 al <strong>5 de octubre de 2026</strong>.</p>
+        <div class="callout warn">Según la planilla oficial, esa veda terminaba el 5 de octubre de 2026. Revisa en Subpesca si fue renovada; mientras tanto, lo responsable es devolver cualquier pez nativo.</div>
+        <p class="muted">Decreto Exento N.° 878 de 2011.</p></div></details>
+      <details><summary>Aparejos y venta</summary><div class="in">
+        <p>Solo se pueden usar aparejos de uso personal (caña, línea de mano y similares). Lo que pescas en forma recreativa no se puede vender.</p>
+        <p class="muted">Decreto N.° 103 de 2012; Ley N.° 20.256.</p></div></details>
+      <details><summary>Didymo (alga plaga en ríos)</summary><div class="in">
+        <p>Al terminar la jornada, lava botas, waders y aparejos con agua con cloro al 2 % (200 ml en 10 litros), sal al 5 % (500 g en 10 litros) o detergente (500 ml en 10 litros) por 1 a 2 minutos. Así evitas llevar el alga de un río a otro.</p>
+        <p class="muted">Res. Ex. N.° 332/2011 y N.° 493/2026.</p></div></details>
+    </div>
+    ${versionHTML()}
+    <button class="row card" style="justify-content:space-between;border:1px solid var(--line);border-radius:var(--r)" data-go="fuentes"><span><strong>Créditos y fuentes de datos</strong><br><span class="small muted">De dónde sale cada dato, licencias y privacidad</span></span><span style="color:var(--accent)">→</span></button>
+  </div>`;
+}
+
+// Créditos visibles para los usuarios: solo lo que la app usa, con su licencia (lo exigen CC BY y los términos de cada fuente).
+// El registro interno con costos y fuentes descartadas está en FUENTES_Y_LICENCIAS.md
+const CC_BY = "https://creativecommons.org/licenses/by/4.0/deed.es";
+const FUENTES = [
+  { g: "Normas de pesca", items: [
+    { n: "Sernapesca · Medidas de administración de pesca recreativa 2026-2027", d: "Vedas, tallas, cuotas y temporadas de cada especie. Planilla oficial actualizada el 11-09-2026.", l: "Información pública", u: PLANILLA },
+    { n: "Subpesca · Regulaciones de pesca recreativa", d: "Resoluciones completas (por ejemplo, Res. Ex. N.° 443 de 2025 para la pesca en el mar).", l: "Información pública", u: "https://www.subpesca.cl/portal/normativa/Regulaciones-de-pesca-recreativa/" },
+    { n: "Sernapesca · Licencia de pesca recreativa", d: "Requisitos, exenciones y compra de la licencia.", l: "Información pública", u: "https://pescarecreativa.sernapesca.cl" },
+  ]},
+  { g: "Tiempo, mar y mareas", items: [
+    { n: "MET Norway (Instituto Meteorológico de Noruega)", d: "Viento y temperatura por hora, hasta 9 días.", l: "CC BY 4.0", lu: CC_BY, u: "https://api.met.no/" },
+    { n: "NOAA WaveWatch III, servido por PacIOOS (Universidad de Hawái)", d: "Altura y periodo de las olas, 7 días.", l: "Uso y redistribución libres", u: "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/ww3_global.html" },
+    { n: "University of Hawaii Sea Level Center (UHSLC) · Mareógrafo de Valparaíso, estación 081", d: "Mediciones del nivel del mar con las que la app calcula pleamares, bajamares y coeficiente de marea. Caldwell, P. C., M. A. Merrifield, P. R. Thompson (2015), NOAA NCEI Accession 0019568.", l: "Datos abiertos", u: "https://uhslc.soest.hawaii.edu/" },
+  ]},
+  { g: "Cálculos de la app", items: [
+    { n: "Sol, luna y actividad de peces", d: "Salida y puesta del sol y la luna, fase, luz de luna de noche y actividad estimada (teoría solunar, marea y luz). Se calculan en el celular con fórmulas astronómicas públicas.", l: "Propio", u: null },
+    { n: "Estado del mar", d: "Clasificación propia según la altura de ola y el viento: bueno bajo 1,5 m y 20 km/h; no recomendado desde 2,5 m o 35 km/h.", l: "Propio", u: null },
+  ]},
+  { g: "Fotos de especies", items: [
+    { n: "iNaturalist y Wikimedia Commons", d: "Cada foto muestra su autor, licencia y enlace al original en la ficha de la especie. Se usan solo licencias que permiten este uso (CC0, CC BY, CC BY-SA y dominio público), con el tamaño reducido.", l: "Según cada foto", u: "https://commons.wikimedia.org" },
+  ]},
+  { g: "Programas y tipografías", items: [
+    { n: "pdf.js (Mozilla)", d: "Lee el PDF de tu licencia, dentro del celular.", l: "Apache 2.0", lu: "https://www.apache.org/licenses/LICENSE-2.0", u: "https://github.com/mozilla/pdf.js" },
+    { n: "JSZip", d: "Arma las copias de seguridad y las carpetas descargables.", l: "MIT", lu: "https://github.com/Stuk/jszip/blob/main/LICENSE.markdown", u: "https://stuk.github.io/jszip/" },
+    { n: "Familjen Grotesk, IBM Plex Sans e IBM Plex Mono", d: "Tipografías de Google Fonts.", l: "SIL Open Font License", lu: "https://openfontlicense.org", u: "https://fonts.google.com" },
+  ]},
+];
+function vFuentes() {
+  return `<div class="stack-lg view">
+    <section class="hero"><span class="label">Créditos</span><h1>Fuentes de datos</h1><p class="muted small">De dónde sale cada dato de la app. Normas verificadas el ${VERIFICADO}. La información es referencial: la fuente oficial es Sernapesca y Subpesca.</p></section>
+    ${FUENTES.map(g => `<section class="stack"><h3>${H(g.g)}</h3><div class="list">${g.items.map(i => `<div class="src-item">
+      <div class="h"><strong>${i.u ? `<a href="${i.u}" target="_blank" rel="noopener" style="color:var(--fg)">${H(i.n)}</a>` : H(i.n)}</strong><span class="chip info" style="font-weight:500">${i.lu ? `<a href="${i.lu}" target="_blank" rel="noopener" style="color:inherit">${H(i.l)}</a>` : H(i.l)}</span></div>
+      <p class="small">${H(i.d)}</p></div>`).join("")}</div></section>`).join("")}
+    <section class="callout info small"><strong>Tus datos.</strong> Tus capturas, carpetas, fotos y licencia de pesca se guardan solo en este celular. La app no tiene cuentas ni servidor, y no los envía a ninguna parte. El aviso de la tienda recomendada es un enlace normal: no usa cookies ni sigue lo que haces.</section>
+  </div>`;
+}
+
+/* ---------- Aviso del auspiciador (se configura en anuncio.json, sin tocar el código) ---------- */
+let ANUNCIO = null;
+async function anuncioCargar() { try { ANUNCIO = await fetch("anuncio.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null); } catch (e) { ANUNCIO = null; } if (ANUNCIO && st.tab === "hoy") render(); }
+const urlSegura = (u) => /^https:\/\//.test(u || "") ? u : null;
+function anuncioHTML() {
+  const a = ANUNCIO;
+  if (a && a.activo && a.titulo) {
+    const url = urlSegura(a.enlace);
+    return `<aside class="card" style="display:flex;gap:12px;align-items:center;padding:12px 14px" aria-label="Aviso">
+      ${a.imagen ? `<img src="${H(a.imagen)}" alt="Logo de ${H(a.titulo)}" style="width:84px;height:70px;object-fit:contain;flex:none">` : ""}
+      <span class="txt" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;align-items:flex-start"><span class="label" style="font-size:10.5px">${H(a.etiqueta || "Auspicia")}</span><strong>${H(a.titulo)}</strong>${a.texto ? `<span class="small muted">${H(a.texto)}</span>` : ""}
+      ${url ? `<a class="back" href="${H(url)}" target="_blank" rel="noopener sponsored" style="text-decoration:none;font-size:14px;margin-top:8px;padding:6px 14px">${H(a.boton || "Ver")}</a>` : ""}</span>
+    </aside>`;
+  }
+  if (a && a.contacto) return `<p class="small muted" style="text-align:center">¿Tienes una tienda de pesca o una caleta? Auspicia jPique: <span style="user-select:all">${H(a.contacto)}</span></p>`;
+  return "";
+}
+
+/* ---------- Mis capturas y carpetas (fotos y datos guardados solo en este celular, en IndexedDB) ---------- */
+let CAPT = [];            // capturas, más recientes primero
+let CARP = [];            // carpetas (salidas), más recientes primero
+let FORM_FOTOS = [];      // fotos del formulario en edición (Blobs)
+const URLS = new WeakMap(); // Blob -> object URL, para no crear URLs repetidas
+const urlDe = (b) => { if (!URLS.has(b)) URLS.set(b, URL.createObjectURL(b)); return URLS.get(b); };
+async function dbAll(s) { const db = await idb(); return new Promise((ok, ko) => { const q = db.transaction(s).objectStore(s).getAll(); q.onsuccess = () => ok(q.result || []); q.onerror = () => ko(q.error); }); }
+async function dbPut(s, v) { const db = await idb(); return new Promise((ok, ko) => { const tx = db.transaction(s, "readwrite"); tx.objectStore(s).put(v); tx.oncomplete = ok; tx.onerror = () => ko(tx.error); }); }
+async function dbDel(s, id) { const db = await idb(); return new Promise((ok, ko) => { const tx = db.transaction(s, "readwrite"); tx.objectStore(s).delete(id); tx.oncomplete = ok; tx.onerror = () => ko(tx.error); }); }
+const capPut = (c) => dbPut("capturas", c), capDel = (id) => dbDel("capturas", id);
+async function capCargar() {
+  try { CAPT = (await dbAll("capturas")).sort((a, b) => b.fecha.localeCompare(a.fecha)); } catch (e) { CAPT = []; }
+  try { CARP = (await dbAll("carpetas")).sort((a, b) => (b.fecha || "").localeCompare(a.fecha || "") || b.creado.localeCompare(a.creado)); } catch (e) { CARP = []; }
+  if (st.tab === "capturas" && $("#sheet").hidden) render();
+}
+const nuevoId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const nombreEsp = (c) => c.especie && SPMAP[c.especie] ? SPMAP[c.especie].nombre : (c.especieOtra || "Especie sin indicar");
+const fechaTxt = (f) => { const [d, t] = f.split("T"); const x = ymdDate(d); return `${DIAS[x.getDay()]} ${x.getDate()} de ${MESES[x.getMonth()]} ${x.getFullYear()}${t ? " · " + t : ""}`; };
+const fechaCorta = (d) => { if (!d) return ""; const x = ymdDate(d); return `${x.getDate()} de ${MESES[x.getMonth()]} ${x.getFullYear()}`; };
+const tallaMin = (sp) => { const m = sp && sp.talla.match(/(\d+)\s*cm/); return m ? +m[1] : null; };
+const kb = (n) => n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.round(n / 1024) + " KB";
+const slug = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "foto";
+const ICO = {
+  carpeta: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  mas: '<path d="M12 5v14M5 12h14"/>',
+  galeria: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
+  compartir: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 11l7.6-4M8.2 13l7.6 4"/>',
+  bajar: '<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>',
+  subir: '<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>',
+  volver: '<path d="M15 6l-6 6 6 6"/>',
+  lapiz: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+};
+const BTN_FUERTE = 'style="align-self:stretch;justify-content:center;background:var(--fg);color:var(--bg);border-color:var(--fg);padding:12px"';
+
+// Reduce cada foto a 2048 px como máximo para no llenar el celular (la original queda en la galería si se eligió desde ahí)
+async function prepararFoto(file) {
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const k = Math.min(1, 2048 / Math.max(bmp.width, bmp.height)), c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k); c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    return await new Promise(ok => c.toBlob(ok, "image/jpeg", 0.88));
+  } catch (e) { return file; }
+}
+// Condiciones del momento de la captura, si están dentro del pronóstico disponible
+function condiciones(spotId, fecha) {
+  const spot = SPOTS.find(s => s.id === spotId); if (!spot) return null;
+  const D = datos(spot), [d, t] = fecha.split("T"), di = Math.round((ymdDate(d) - ymdDate(D.t0)) / 864e5), h = +t.slice(0, 2);
+  const out = { luna: lunaFase(ymdDate(d)).nombre };
+  if (di < 0 || di > 6) return out;
+  const i = di * 24 + h;
+  if (D.w.wind[i] != null) out.viento = Math.round(D.w.wind[i]); if (D.w.temp[i] != null) out.temp = Math.round(D.w.temp[i]);
+  if (D.m) { if (D.m.wave_height[i] != null) out.ola = +D.m.wave_height[i].toFixed(1); const s = D.m.sea_level_height_msl; out.marea = s[i + 1] > s[i - 1] ? "subiendo" : "bajando"; }
+  out.actividad = actividad(spot, D, di).horas[h];
+  return out;
+}
+// Todas las fotos de una carpeta: primero las de la salida, después las de sus capturas
+function fotosDe(f) {
+  const caps = CAPT.filter(c => c.carpeta === f.id).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  return [...f.fotos.map((b, i) => ({ b, tipo: "foto", i })), ...caps.flatMap(c => c.fotos.map((b, i) => ({ b, tipo: "cap", cap: c, i })))];
+}
+const capsDe = (id) => CAPT.filter(c => c.carpeta === id).sort((a, b) => a.fecha.localeCompare(b.fecha));
+const mostrarSheet = (html) => { const el = $("#sheet"); el.innerHTML = `<div class="sheet-in">${html}</div>`; el.hidden = false; el.scrollTop = 0; document.body.style.overflow = "hidden"; };
+const btnVolver = (attr, txt = "Volver") => `<button class="back" type="button" ${attr}>${svgI(ICO.volver, 18)}${txt}</button>`;
+const tarjetaCaptura = (c) => `<button class="sp" data-cap="${c.id}">${c.fotos.length ? `<span class="phw"><img class="ph" src="${urlDe(c.fotos[0])}" alt="${H(nombreEsp(c))}" loading="lazy">${c.fotos.length > 1 ? `<span class="n num">${c.fotos.length} fotos</span>` : ""}</span>` : `<span class="ph-empty">Sin foto</span>`}
+  <span class="b">${c.devuelto ? `<span class="chip info">Devuelto al agua</span>` : ""}<strong>${H(nombreEsp(c))}</strong><em>${H(fechaTxt(c.fecha))}</em>
+  <span class="kv">${c.largo ? `<span>Largo <b>${c.largo} cm</b></span>` : ""}${c.peso ? `<span>Peso <b>${c.peso} kg</b></span>` : ""}</span></span></button>`;
+
+function vCapturas() {
+  const total = CAPT.length, especies = new Set(CAPT.map(nombreEsp)).size;
+  const mayor = CAPT.filter(c => c.largo).sort((a, b) => b.largo - a.largo)[0];
+  const sueltas = CAPT.filter(c => !c.carpeta || !CARP.some(f => f.id === c.carpeta));
+  const vacio = !total && !CARP.length;
+  return `<div class="stack-lg view">
+    <section class="hero"><span class="label">Bitácora</span><h1>Mis capturas</h1><p class="muted small">Ordena tus salidas en carpetas, con las fotos del día y los peces que sacaron.</p></section>
+    <div class="callout warn small"><strong>Tus fotos quedan solo en este celular.</strong> No se suben a internet. Si desinstalas la app o borras los datos del navegador, se pierden: descarga una copia de seguridad de vez en cuando.</div>
+    <div class="grid">
+      <button type="button" class="card stack" data-carp-new style="align-items:flex-start;gap:8px;text-align:left;cursor:pointer"><span style="color:var(--accent)">${svgI(ICO.carpeta, 24)}</span><strong>Nueva carpeta</strong><span class="small muted">Una salida, un viaje o «Pesca con mi hijo»</span></button>
+      <button type="button" class="card stack" data-cap-new="" style="align-items:flex-start;gap:8px;text-align:left;cursor:pointer"><span style="color:var(--accent)">${svgI(ICON.capturas, 24)}</span><strong>Agregar captura</strong><span class="small muted">Foto, especie, largo y lugar</span></button>
+    </div>
+    ${total ? `<div class="metrics" style="grid-template-columns:repeat(3,1fr);margin:0">
+        <div class="metric"><span>Capturas</span><b>${total}</b></div>
+        <div class="metric"><span>Especies</span><b>${especies}</b></div>
+        <div class="metric"><span>La más grande</span><b>${mayor ? mayor.largo + " cm" : "—"}</b><span>${mayor ? H(nombreEsp(mayor)) : ""}</span></div>
+      </div>` : ""}
+    ${CARP.length ? `<section class="stack"><h3>Carpetas</h3><div class="grid">${CARP.map(f => { const fs = fotosDe(f), nc = capsDe(f.id).length;
+      return `<button class="sp" data-carp="${f.id}">${fs.length ? `<span class="phw"><img class="ph" src="${urlDe(fs[0].b)}" alt="" loading="lazy"><span class="n" style="left:8px;right:auto;display:inline-flex;gap:4px;align-items:center">${svgI(ICO.carpeta, 12)}</span></span>` : `<span class="ph-empty">${svgI(ICO.carpeta, 28)}</span>`}
+        <span class="b"><strong>${H(f.nombre)}</strong><em>${H([fechaCorta(f.fecha), f.lugar].filter(Boolean).join(" · "))}</em>
+        <span class="kv"><span><b>${fs.length}</b> ${fs.length === 1 ? "foto" : "fotos"}</span><span><b>${nc}</b> ${nc === 1 ? "captura" : "capturas"}</span></span></span></button>`; }).join("")}</div></section>` : ""}
+    ${sueltas.length ? `<section class="stack"><h3>${CARP.length ? "Capturas sin carpeta" : "Capturas"}</h3><div class="grid">${sueltas.map(tarjetaCaptura).join("")}</div></section>` : ""}
+    ${vacio ? `<div class="card stack" style="align-items:center;text-align:center;padding:28px 16px">
+        <span style="color:var(--muted)">${svgI(ICO.carpeta, 36)}</span>
+        <strong>Aún no tienes carpetas ni capturas</strong>
+        <p class="small muted">Crea una carpeta por cada salida y agrégale las fotos del día y los peces. En cada captura la app guarda también la marea, el oleaje y la luna de ese momento.</p>
+      </div>` : ""}
+    <section class="card stack">
+      <h3>Copia de seguridad</h3>
+      <p class="small muted">Descarga todas tus carpetas y capturas en un archivo .zip y guárdalo en Google Drive, tu computador o donde prefieras. Con ese archivo las recuperas en otro celular.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${vacio ? "" : `<button type="button" class="back" data-cap-backup>${svgI(ICO.bajar, 18)}Descargar copia</button>`}
+        <label class="back" style="cursor:pointer">${svgI(ICO.subir, 18)}Restaurar copia<input id="cap-restore" type="file" accept=".zip,application/zip" hidden></label>
+      </div>
+      <p class="small muted" id="cap-uso"></p>
+      <div id="cap-msg" class="callout small info" hidden></div>
+    </section>
+  </div>`;
+}
+async function mostrarUso() {
+  const el = $("#cap-uso"); if (!el || !navigator.storage || !navigator.storage.estimate) return;
+  try { const e = await navigator.storage.estimate(); const p = navigator.storage.persisted ? await navigator.storage.persisted() : false;
+    el.textContent = `Espacio usado por la app: ${kb(e.usage || 0)}.${p ? " El celular no borrará estos datos por falta de espacio." : ""}`; } catch (e) {}
+}
+async function pedirPersistencia() { try { if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch (e) {} }
+
+/* --- Selector de fotos reutilizable (cámara o galería) --- */
+const selectorFotos = (txt = "Fotos") => `<section class="stack"><span class="label">${txt}</span>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <label class="back" style="cursor:pointer">${svgI(ICON.capturas, 18)}Tomar foto<input id="cap-camara" type="file" accept="image/*" capture="environment" hidden></label>
+    <label class="back" style="cursor:pointer">${svgI(ICO.galeria, 18)}Elegir de la galería<input id="cap-galeria" type="file" accept="image/*" multiple hidden></label>
+  </div>
+  <div id="cap-prev" class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div></section>`;
+function activarSelector() {
+  const agregar = async (files) => { for (const f of files) FORM_FOTOS.push(await prepararFoto(f)); pintarPrev(); };
+  $("#cap-camara").addEventListener("change", (e) => agregar([...e.target.files]));
+  $("#cap-galeria").addEventListener("change", (e) => agregar([...e.target.files]));
+}
+function pintarPrev() {
+  $("#cap-prev").innerHTML = FORM_FOTOS.map((b, i) => `<span class="phw" style="border-radius:10px;overflow:hidden"><img class="ph" src="${urlDe(b)}" alt="Foto ${i + 1}"><button type="button" class="car-btn" data-foto-quitar="${i}" aria-label="Quitar foto ${i + 1}" style="top:20px;right:4px;left:auto;width:28px;height:28px">${svgI('<path d="M6 6l12 12M18 6L6 18"/>', 14)}</button></span>`).join("");
+}
+const opcionesLugar = (sel) => `${SPOTS.map(s => `<option value="${s.id}" ${s.id === sel ? "selected" : ""}>${H(s.nombre)}</option>`).join("")}<option value="otro" ${sel === "otro" ? "selected" : ""}>Otro lugar</option>`;
+
+/* --- Carpetas --- */
+function abrirFormCarpeta(id = null) {
+  const f = id ? CARP.find(x => x.id === id) : null; FORM_FOTOS = [];
+  const lugarSel = f ? (f.spot || "otro") : st.spot;
+  mostrarSheet(`${btnVolver(f ? `data-carp="${f.id}"` : "data-close", "Cancelar")}
+    <div class="stack" style="gap:6px"><span class="label">Bitácora</span><h1 style="font-size:28px">${f ? "Editar carpeta" : "Nueva carpeta"}</h1></div>
+    <form id="carp-form" class="stack" novalidate>
+      <label class="stack" style="gap:4px"><span class="label">Nombre</span><input id="carp-nombre" class="search" style="border-radius:10px" placeholder="Pesca con mi hijo" value="${H(f ? f.nombre : "")}" autocomplete="off"></label>
+      <label class="stack" style="gap:4px"><span class="label">Fecha</span><input id="carp-fecha" type="date" class="search" style="border-radius:10px" value="${H(f ? f.fecha || "" : nowCL().ymd)}"></label>
+      <label class="stack" style="gap:4px"><span class="label">Lugar</span><select id="carp-spot" class="search" style="border-radius:10px">${opcionesLugar(lugarSel)}</select></label>
+      <label class="stack" id="carp-lugar-wrap" style="gap:4px" ${lugarSel === "otro" ? "" : "hidden"}><span class="label">¿Dónde?</span><input id="carp-lugar" class="search" style="border-radius:10px" value="${H(f && !f.spot ? f.lugar || "" : "")}" placeholder="Nombre del lugar" autocomplete="off"></label>
+      <label class="stack" style="gap:4px"><span class="label">Notas</span><textarea id="carp-notas" rows="3" class="search" style="border-radius:10px;resize:vertical" placeholder="Con quién fuiste, cómo estuvo el día…">${H(f ? f.notas || "" : "")}</textarea></label>
+    </form>
+    ${f ? "" : selectorFotos("Fotos de la salida (opcional)")}
+    <div id="cap-err" class="callout small bad" hidden></div>
+    <button type="button" class="back" data-carp-save="${f ? f.id : ""}" ${BTN_FUERTE}>${f ? "Guardar cambios" : "Crear carpeta"}</button>
+    <p class="small muted">Se guarda solo en este celular.</p>`);
+  if (!f) activarSelector();
+  $("#carp-spot").addEventListener("change", (e) => { $("#carp-lugar-wrap").hidden = e.target.value !== "otro"; });
+  $("#carp-form").addEventListener("submit", (e) => { e.preventDefault(); guardarCarpeta(f ? f.id : ""); });
+  $("#carp-nombre").focus();
+}
+async function guardarCarpeta(id) {
+  const nombre = $("#carp-nombre").value.trim(), err = $("#cap-err");
+  if (!nombre) { err.hidden = false; err.textContent = "Ponle un nombre a la carpeta, por ejemplo «Pesca con mi hijo»."; return; }
+  const sp = $("#carp-spot").value, previo = id ? CARP.find(x => x.id === id) : null;
+  const f = { ...(previo || { id: nuevoId("f"), creado: new Date().toISOString(), fotos: [] }), nombre, fecha: $("#carp-fecha").value, notas: $("#carp-notas").value.trim(),
+    spot: sp === "otro" ? "" : sp, lugar: sp === "otro" ? $("#carp-lugar").value.trim() : (SPOTS.find(s => s.id === sp) || {}).nombre };
+  if (!previo) f.fotos = FORM_FOTOS.slice();
+  try { await dbPut("carpetas", f); } catch (e) { err.hidden = false; err.textContent = "No se pudo guardar. Revisa que el celular tenga espacio libre e inténtalo de nuevo."; return; }
+  FORM_FOTOS = []; pedirPersistencia(); await capCargar(); st.tab = "capturas"; render(); verCarpeta(f.id, previo ? "Cambios guardados." : "Carpeta creada en este celular.");
+}
+function verCarpeta(id, aviso = "") {
+  const f = CARP.find(x => x.id === id); if (!f) { cerrarFicha(); return render(); }
+  const fs = fotosDe(f), caps = capsDe(f.id);
+  mostrarSheet(`${btnVolver("data-close", "Mis capturas")}
+    ${aviso ? `<div class="callout info small">${H(aviso)}</div>` : ""}
+    <div class="stack" style="gap:6px"><span class="label" style="display:inline-flex;gap:6px;align-items:center">${svgI(ICO.carpeta, 14)}Carpeta</span><h1 style="font-size:28px">${H(f.nombre)}</h1>
+      <p class="muted">${H([fechaCorta(f.fecha), f.lugar].filter(Boolean).join(" · "))}</p>${f.notas ? `<p>${H(f.notas)}</p>` : ""}</div>
+    <div class="grid">
+      <label class="back" style="cursor:pointer;justify-content:center">${svgI(ICO.galeria, 18)}Agregar fotos<input id="carp-galeria" type="file" accept="image/*" multiple hidden></label>
+      <label class="back" style="cursor:pointer;justify-content:center">${svgI(ICON.capturas, 18)}Tomar foto<input id="carp-camara" type="file" accept="image/*" capture="environment" hidden></label>
+    </div>
+    <button type="button" class="back" data-cap-new="${f.id}" ${BTN_FUERTE}>${svgI(ICO.mas, 18)}Agregar captura a esta carpeta</button>
+    <div id="cap-msg" class="callout small info" hidden></div>
+    <section class="stack"><div class="sec-head"><h3>Fotos</h3><span class="small muted">${fs.length}</span></div>
+      ${fs.length ? `<div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">${fs.map((x, k) => `<button type="button" data-foto="${f.id}|${k}" style="padding:0;border:0;background:none;cursor:pointer;position:relative" aria-label="Ver foto ${k + 1}">
+        <img src="${urlDe(x.b)}" alt="" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block">${x.tipo === "cap" ? `<span class="n" style="position:absolute;left:4px;bottom:4px;font-size:10px;padding:1px 6px;border-radius:999px;background:rgba(10,18,22,.65);color:#fff">${H(nombreEsp(x.cap))}</span>` : ""}</button>`).join("")}</div>`
+      : `<p class="small muted">Todavía no hay fotos. Agrega las del día: el lugar, la familia, el equipo.</p>`}</section>
+    ${caps.length ? `<section class="stack"><div class="sec-head"><h3>Capturas</h3><span class="small muted">${caps.length}</span></div><div class="list">${caps.map(c => `<button class="row" data-cap="${c.id}">${c.fotos.length ? `<img class="thumb" src="${urlDe(c.fotos[0])}" alt="">` : `<span class="thumb"></span>`}
+      <span class="txt"><strong>${H(nombreEsp(c))}</strong><span>${H([c.largo ? c.largo + " cm" : "", c.fecha.split("T")[1], c.devuelto ? "devuelto" : ""].filter(Boolean).join(" · "))}</span></span></button>`).join("")}</div></section>` : ""}
+    <div class="stack">
+      ${fs.length ? `<button type="button" class="back" data-carp-share="${f.id}" style="align-self:stretch;justify-content:center;padding:12px">${svgI(ICO.compartir, 18)}Compartir fotos de la carpeta</button>
+      <button type="button" class="back" data-carp-dl="${f.id}" style="align-self:stretch;justify-content:center;padding:12px">${svgI(ICO.bajar, 18)}Descargar carpeta (.zip)</button>` : ""}
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="back" data-carp-edit="${f.id}">${svgI(ICO.lapiz, 18)}Editar</button>
+      <span id="carp-del-wrap"><button type="button" class="back" data-carp-del="${f.id}" style="color:var(--bad)">Borrar carpeta</button></span></div>
+    </div>`);
+  const sumar = async (files) => {
+    if (!files.length) return; avisoCap("Guardando fotos…");
+    const nuevas = []; for (const x of files) nuevas.push(await prepararFoto(x));
+    try { await dbPut("carpetas", { ...f, fotos: [...f.fotos, ...nuevas] }); } catch (e) { return avisoCap("No se pudieron guardar las fotos. Revisa el espacio libre del celular.", "bad"); }
+    pedirPersistencia(); await capCargar(); verCarpeta(f.id, nuevas.length === 1 ? "Foto agregada." : `${nuevas.length} fotos agregadas.`);
+  };
+  $("#carp-galeria").addEventListener("change", (e) => sumar([...e.target.files]));
+  $("#carp-camara").addEventListener("change", (e) => sumar([...e.target.files]));
+}
+async function borrarCarpeta(id, todo) {
+  const caps = capsDe(id);
+  for (const c of caps) { if (todo) await capDel(c.id); else await capPut({ ...c, carpeta: "" }); }
+  await dbDel("carpetas", id); await capCargar(); cerrarFicha(); render();
+}
+
+/* --- Visor de fotos de una carpeta --- */
+function verFoto(carpId, k) {
+  const f = CARP.find(x => x.id === carpId); if (!f) return;
+  const fs = fotosDe(f), n = fs.length; k = Math.min(k, n - 1);
+  mostrarSheet(`${btnVolver(`data-carp="${f.id}"`, H(f.nombre))}
+    <div class="car"><div class="car-track" id="car" tabindex="0" aria-label="Fotos de la carpeta">${fs.map((x, i) => `<figure class="car-slide"><img src="${urlDe(x.b)}" alt="Foto ${i + 1} de ${n}" ${Math.abs(i - k) > 1 ? 'loading="lazy"' : ""}></figure>`).join("")}</div>
+      ${n > 1 ? `<button class="car-btn prev" type="button" data-car="-1" aria-label="Foto anterior">${svgI(ICO.volver, 18)}</button><button class="car-btn next" type="button" data-car="1" aria-label="Foto siguiente">${svgI('<path d="M9 6l6 6-6 6"/>', 18)}</button>` : ""}
+      <span class="car-count num" id="car-n">${k + 1} / ${n}</span></div>
+    <p class="small muted" id="foto-info"></p>
+    <button type="button" class="back" data-foto-share ${BTN_FUERTE}>${svgI(ICO.compartir, 18)}Compartir esta foto</button>
+    <button type="button" class="back" data-foto-dl style="align-self:stretch;justify-content:center;padding:12px">${svgI(ICO.bajar, 18)}Descargar al celular</button>
+    <div id="cap-msg" class="callout small info" hidden></div>
+    <div id="foto-extra"></div>`);
+  const tr = $("#car");
+  let ultima = k; // si el carrusel aún no tiene ancho (recién abierto), se usa la foto pedida
+  const actual = () => { const w = tr.clientWidth; if (w) ultima = Math.min(n - 1, Math.max(0, Math.round(tr.scrollLeft / w))); return ultima; };
+  const upd = () => {
+    if (!$("#car-n") || !document.body.contains(tr)) return; // el visor ya se cerró
+    const i = actual(), x = fs[i]; $("#car-n").textContent = `${i + 1} / ${n}`;
+    $("#foto-info").textContent = x.tipo === "cap" ? `Captura: ${nombreEsp(x.cap)}${x.cap.largo ? " de " + x.cap.largo + " cm" : ""} · ${fechaTxt(x.cap.fecha)}` : `Foto de la salida · ${f.nombre}`;
+    $("#foto-extra").innerHTML = x.tipo === "cap" ? `<button type="button" class="back" data-cap="${x.cap.id}">Ver la captura</button>`
+      : `<span id="foto-del-wrap"><button type="button" class="back" data-foto-del style="color:var(--bad)">Quitar foto de la carpeta</button></span>`;
+  };
+  VISOR = { f, fs, actual };
+  tr.addEventListener("scroll", () => requestAnimationFrame(upd), { passive: true });
+  requestAnimationFrame(() => { tr.scrollLeft = k * tr.clientWidth; upd(); });
+  upd();
+}
+let VISOR = null;
+const archivoFoto = (f, x, i) => x.tipo === "cap" ? nombreArchivo(x.cap, x.i) : `${slug(f.nombre)}_${f.fecha || "sin-fecha"}_${i + 1}.jpg`;
+
+/* --- Capturas --- */
+function abrirFormCaptura(carpetaId = null) {
+  FORM_FOTOS = [];
+  const now = nowCL(), carp = carpetaId ? CARP.find(x => x.id === carpetaId) : null;
+  const ahora = carp && carp.fecha && carp.fecha !== now.ymd ? `${carp.fecha}T12:00` : `${now.ymd}T${String(now.h).padStart(2, "0")}:${new Date().toTimeString().slice(3, 5)}`;
+  const spotSel = carp ? (carp.spot || "otro") : st.spot;
+  const opts = (m) => ESPECIES.filter(s => s.medio === m).map(s => `<option value="${s.id}">${H(s.nombre)}</option>`).join("");
+  mostrarSheet(`${btnVolver(carp ? `data-carp="${carp.id}"` : "data-close", "Cancelar")}
+    <div class="stack" style="gap:6px"><span class="label">${carp ? H(carp.nombre) : "Bitácora"}</span><h1 style="font-size:28px">Nueva captura</h1></div>
+    ${selectorFotos()}
+    <form id="cap-form" class="stack" novalidate>
+      <label class="stack" style="gap:4px"><span class="label">Especie</span>
+        <select id="cap-especie" class="search" style="border-radius:10px"><option value="">Elegir…</option><optgroup label="Mar">${opts("mar")}</optgroup><optgroup label="Agua dulce">${opts("dulce")}</optgroup><option value="otra">Otra especie</option></select></label>
+      <label class="stack" id="cap-otra-wrap" style="gap:4px" hidden><span class="label">¿Cuál?</span><input id="cap-otra" class="search" style="border-radius:10px" placeholder="Nombre de la especie" autocomplete="off"></label>
+      <div class="grid">
+        <label class="stack" style="gap:4px"><span class="label">Largo (cm)</span><input id="cap-largo" type="number" inputmode="decimal" min="0" step="0.5" class="search" style="border-radius:10px"></label>
+        <label class="stack" style="gap:4px"><span class="label">Peso (kg)</span><input id="cap-peso" type="number" inputmode="decimal" min="0" step="0.05" class="search" style="border-radius:10px"></label>
+      </div>
+      <div id="cap-aviso" class="callout small bad" hidden></div>
+      <label class="stack" style="gap:4px"><span class="label">Fecha y hora</span><input id="cap-fecha" type="datetime-local" value="${ahora}" class="search" style="border-radius:10px"></label>
+      <label class="stack" style="gap:4px"><span class="label">Lugar</span><select id="cap-spot" class="search" style="border-radius:10px">${opcionesLugar(spotSel)}</select></label>
+      <label class="stack" id="cap-lugar-wrap" style="gap:4px" ${spotSel === "otro" ? "" : "hidden"}><span class="label">¿Dónde?</span><input id="cap-lugar" class="search" style="border-radius:10px" placeholder="Nombre del lugar" value="${H(carp && !carp.spot ? carp.lugar || "" : "")}" autocomplete="off"></label>
+      <label class="stack" style="gap:4px"><span class="label">Carpeta</span><select id="cap-carpeta" class="search" style="border-radius:10px">
+        <option value="">Sin carpeta</option>${CARP.map(x => `<option value="${x.id}" ${carp && carp.id === x.id ? "selected" : ""}>${H(x.nombre)}</option>`).join("")}<option value="nueva">+ Nueva carpeta…</option></select></label>
+      <label class="stack" id="cap-carpeta-wrap" style="gap:4px" hidden><span class="label">Nombre de la carpeta nueva</span><input id="cap-carpeta-nombre" class="search" style="border-radius:10px" placeholder="Pesca con mi hijo" autocomplete="off"></label>
+      <label style="display:flex;gap:10px;align-items:center"><input id="cap-devuelto" type="checkbox" style="width:20px;height:20px">Lo devolví al agua</label>
+      <label class="stack" style="gap:4px"><span class="label">Notas</span><textarea id="cap-notas" rows="3" class="search" style="border-radius:10px;resize:vertical" placeholder="Carnada, señuelo, quién lo sacó…"></textarea></label>
+      <div id="cap-err" class="callout small bad" hidden></div>
+      <button type="submit" class="back" ${BTN_FUERTE}>Guardar captura</button>
+      <p class="small muted">Se guarda solo en este celular.</p>
+    </form>`);
+  activarSelector();
+  ["cap-especie", "cap-largo", "cap-fecha", "cap-spot", "cap-carpeta"].forEach(id => $("#" + id).addEventListener("input", validarCaptura));
+  $("#cap-form").addEventListener("submit", (e) => { e.preventDefault(); guardarCaptura(); });
+}
+// Avisa si el pez está bajo la talla mínima o en veda en la fecha indicada
+function validarCaptura() {
+  const id = $("#cap-especie").value, sp = SPMAP[id], largo = parseFloat($("#cap-largo").value), av = $("#cap-aviso");
+  $("#cap-otra-wrap").hidden = id !== "otra"; $("#cap-lugar-wrap").hidden = $("#cap-spot").value !== "otro"; $("#cap-carpeta-wrap").hidden = $("#cap-carpeta").value !== "nueva";
+  const msgs = [];
+  if (sp) {
+    const tm = tallaMin(sp); if (tm && largo && largo < tm) msgs.push(`Bajo la talla mínima de ${tm} cm: debe devolverse al agua.`);
+    const f = $("#cap-fecha").value; if (f) { const spot = SPOTS.find(s => s.id === $("#cap-spot").value); const e = estado(sp, ymdDate(f.slice(0, 10)), spot ? spot.tipo : null);
+      if (e.k === "bad") msgs.push(`${sp.nombre}: ${e.txt.toLowerCase()} en esa fecha. Debe devolverse al agua.`); if (e.k === "warn") msgs.push(`${sp.nombre}: devolución obligatoria.`); }
+  }
+  av.hidden = !msgs.length; av.textContent = msgs.join(" ");
+}
+async function guardarCaptura() {
+  const err = $("#cap-err"), id = $("#cap-especie").value, fecha = $("#cap-fecha").value, fail = (t) => { err.hidden = false; err.textContent = t; };
+  if (!FORM_FOTOS.length && !id) return fail("Agrega al menos una foto o elige la especie.");
+  if (!fecha) return fail("Indica la fecha y hora de la captura.");
+  const spotId = $("#cap-spot").value, lugar = spotId === "otro" ? $("#cap-lugar").value.trim() : (SPOTS.find(s => s.id === spotId) || {}).nombre;
+  let carpeta = $("#cap-carpeta").value;
+  try {
+    if (carpeta === "nueva") {
+      const nombre = $("#cap-carpeta-nombre").value.trim(); if (!nombre) return fail("Escribe el nombre de la carpeta nueva.");
+      const f = { id: nuevoId("f"), creado: new Date().toISOString(), nombre, fecha: fecha.slice(0, 10), lugar, spot: spotId === "otro" ? "" : spotId, notas: "", fotos: [] };
+      await dbPut("carpetas", f); carpeta = f.id;
+    }
+    const c = { id: nuevoId("c"), creado: new Date().toISOString(), fecha, carpeta,
+      especie: id && id !== "otra" ? id : "", especieOtra: id === "otra" ? $("#cap-otra").value.trim() : "",
+      largo: parseFloat($("#cap-largo").value) || null, peso: parseFloat($("#cap-peso").value) || null,
+      spot: spotId === "otro" ? "" : spotId, lugar, devuelto: $("#cap-devuelto").checked, notas: $("#cap-notas").value.trim(), fotos: FORM_FOTOS.slice(),
+      cond: spotId === "otro" ? null : condiciones(spotId, fecha) };
+    await capPut(c);
+    FORM_FOTOS = []; pedirPersistencia(); await capCargar(); st.tab = "capturas"; render();
+    carpeta ? verCarpeta(carpeta, "Captura guardada en esta carpeta.") : verCaptura(c.id, "Captura guardada en este celular.");
+  } catch (e) { fail("No se pudo guardar. Revisa que el celular tenga espacio libre e inténtalo de nuevo."); }
+}
+function verCaptura(id, aviso = "") {
+  const c = CAPT.find(x => x.id === id); if (!c) return;
+  const sp = SPMAP[c.especie], k = c.cond, n = c.fotos.length, carp = CARP.find(x => x.id === c.carpeta);
+  mostrarSheet(`${btnVolver(carp ? `data-carp="${carp.id}"` : "data-close", carp ? H(carp.nombre) : "Volver")}
+    ${aviso ? `<div class="callout info small">${H(aviso)}</div>` : ""}
+    ${n ? `<div class="car"><div class="car-track" id="car" tabindex="0" aria-label="Fotos de la captura">${c.fotos.map((b, i) => `<figure class="car-slide"><img src="${urlDe(b)}" alt="Foto ${i + 1} de ${n}"></figure>`).join("")}</div>
+      ${n > 1 ? `<button class="car-btn prev" type="button" data-car="-1" aria-label="Foto anterior">${svgI(ICO.volver, 18)}</button><button class="car-btn next" type="button" data-car="1" aria-label="Foto siguiente">${svgI('<path d="M9 6l6 6-6 6"/>', 18)}</button><span class="car-count num" id="car-n">1 / ${n}</span>` : ""}</div>` : ""}
+    <div class="stack" style="gap:6px">${c.devuelto ? `<span class="chip info" style="align-self:flex-start">Devuelto al agua</span>` : ""}<h1 style="font-size:28px">${H(nombreEsp(c))}</h1><p class="muted">${H(fechaTxt(c.fecha))}${c.lugar ? " · " + H(c.lugar) : ""}</p></div>
+    <div class="facts">
+      <div><span class="label">Largo</span><b>${c.largo ? c.largo + " cm" : "—"}</b></div>
+      <div><span class="label">Peso</span><b>${c.peso ? c.peso + " kg" : "—"}</b></div>
+      ${k ? `<div class="wide"><span class="label">Condiciones de ese momento</span><span>${[k.ola != null ? `ola ${k.ola} m` : "", k.viento != null ? `viento ${k.viento} km/h` : "", k.marea ? `marea ${k.marea}` : "", k.luna ? k.luna.toLowerCase() : "", k.actividad != null ? `actividad ${k.actividad}/100` : ""].filter(Boolean).join(" · ")}</span></div>` : ""}
+      ${c.notas ? `<div class="wide"><span class="label">Notas</span><span>${H(c.notas)}</span></div>` : ""}
+      <label class="wide" style="display:flex;flex-direction:column;gap:4px"><span class="label">Carpeta</span><select id="cap-mover" class="search" style="border-radius:10px"><option value="">Sin carpeta</option>${CARP.map(x => `<option value="${x.id}" ${x.id === c.carpeta ? "selected" : ""}>${H(x.nombre)}</option>`).join("")}</select></label>
+    </div>
+    ${sp && tallaMin(sp) && c.largo && c.largo < tallaMin(sp) ? `<div class="callout bad small">Bajo la talla mínima de ${tallaMin(sp)} cm.</div>` : ""}
+    <div class="stack">
+      ${n ? `<button type="button" class="back" data-cap-share="${c.id}" ${BTN_FUERTE}>${svgI(ICO.compartir, 18)}Compartir</button>
+      <button type="button" class="back" data-cap-dl="${c.id}" style="align-self:stretch;justify-content:center;padding:12px">${svgI(ICO.bajar, 18)}Descargar ${n > 1 ? "fotos" : "foto"} al celular</button>` : ""}
+      <div id="cap-msg" class="callout small info" hidden></div>
+      <div id="cap-del-wrap"><button type="button" class="back" data-cap-del="${c.id}" style="color:var(--bad)">Borrar captura</button></div>
+    </div>`);
+  const tr = $("#car"); if (tr && n > 1) tr.addEventListener("scroll", () => { const i = Math.round(tr.scrollLeft / tr.clientWidth); $("#car-n").textContent = `${i + 1} / ${n}`; }, { passive: true });
+  $("#cap-mover").addEventListener("change", async (e) => { await capPut({ ...c, carpeta: e.target.value }); await capCargar(); verCaptura(c.id, e.target.value ? "Captura movida a la carpeta." : "La captura quedó sin carpeta."); });
+}
+
+/* --- Compartir, descargar y copia de seguridad --- */
+const nombreArchivo = (c, i) => `${slug(nombreEsp(c))}_${c.fecha.replace(/[:T]/g, "-")}${i != null ? "_" + (i + 1) : ""}.jpg`;
+function descargar(blob, nombre) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+}
+const avisoCap = (t, k = "info") => { const m = $("#cap-msg"); if (m) { m.className = "callout small " + k; m.textContent = t; m.hidden = false; } };
+const AVISO_DESCARGA = "Revisa la carpeta Descargas de tu celular. Si no aparece nada, abre la app instalada en el teléfono: algunas vistas previas bloquean las descargas.";
+const textoCaptura = (c) => [nombreEsp(c), c.largo ? `${c.largo} cm` : "", c.lugar, fechaTxt(c.fecha).split(" · ")[0]].filter(Boolean).join(" · ");
+async function compartirArchivos(files, datos) {
+  try {
+    if (files.length && navigator.canShare && navigator.canShare({ files })) { await navigator.share({ ...datos, files }); return; }
+    if (navigator.share) { await navigator.share(datos); return; }
+    avisoCap("Este navegador no permite compartir directo. Descarga las fotos y compártelas desde tu galería.", "warn");
+  } catch (e) { if (e.name !== "AbortError") avisoCap("No se pudo abrir el menú de compartir. Descarga las fotos y compártelas desde tu galería.", "warn"); }
+}
+function compartirCaptura(id) {
+  const c = CAPT.find(x => x.id === id);
+  compartirArchivos(c.fotos.map((b, i) => new File([b], nombreArchivo(c, i), { type: "image/jpeg" })), { title: nombreEsp(c), text: textoCaptura(c) + " — registrado con jPique" });
+}
+function descargarCaptura(id) {
+  const c = CAPT.find(x => x.id === id);
+  c.fotos.forEach((b, i) => setTimeout(() => descargar(b, nombreArchivo(c, c.fotos.length > 1 ? i : null)), i * 400));
+  avisoCap(AVISO_DESCARGA);
+}
+function compartirCarpeta(id) {
+  const f = CARP.find(x => x.id === id), fs = fotosDe(f);
+  compartirArchivos(fs.map((x, i) => new File([x.b], archivoFoto(f, x, i), { type: "image/jpeg" })), { title: f.nombre, text: [f.nombre, fechaCorta(f.fecha), f.lugar].filter(Boolean).join(" · ") });
+}
+const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+async function descargarCarpeta(id) {
+  const f = CARP.find(x => x.id === id), fs = fotosDe(f);
+  try {
+    avisoCap("Preparando la carpeta…"); await loadScript(JSZIP);
+    const zip = new JSZip(), dir = zip.folder(slug(f.nombre));
+    fs.forEach((x, i) => dir.file(archivoFoto(f, x, i), x.b));
+    const caps = capsDe(f.id);
+    dir.file("resumen.txt", [f.nombre, [fechaCorta(f.fecha), f.lugar].filter(Boolean).join(" · "), f.notas, "", ...(caps.length ? ["Capturas:", ...caps.map(c => "- " + textoCaptura(c) + (c.devuelto ? " (devuelto)" : "") + (c.notas ? ". " + c.notas : ""))] : [])].filter(s => s !== undefined).join("\n"));
+    const blob = await zip.generateAsync({ type: "blob" });
+    descargar(blob, `${slug(f.nombre)}.zip`); avisoCap(`Carpeta lista (${kb(blob.size)}). ${AVISO_DESCARGA}`);
+  } catch (e) { avisoCap("No se pudo armar el .zip. Revisa tu conexión: la primera vez se descarga un componente para crearlo.", "bad"); }
+}
+async function armarCopia() {
+  await loadScript(JSZIP);
+  const zip = new JSZip();
+  const capturas = CAPT.map(c => ({ ...c, fotos: c.fotos.map((b, i) => { const n = `fotos/${c.id}_${i + 1}.jpg`; zip.file(n, b); return n; }) }));
+  const carpetas = CARP.map(f => ({ ...f, fotos: f.fotos.map((b, i) => { const n = `carpetas/${f.id}_${i + 1}.jpg`; zip.file(n, b); return n; }) }));
+  zip.file("capturas.json", JSON.stringify({ app: "jPique", version: 2, exportado: new Date().toISOString(), carpetas, capturas }, null, 1));
+  return zip.generateAsync({ type: "blob" });
+}
+async function copiaSeguridad() {
+  try { avisoCap("Preparando la copia…"); const blob = await armarCopia();
+    descargar(blob, `jpique_copia_${nowCL().ymd}.zip`); avisoCap(`Copia lista (${kb(blob.size)}). Guárdala en Google Drive, tu correo o tu computador.`);
+  } catch (e) { avisoCap("No se pudo crear la copia. Revisa tu conexión: la primera vez se descarga un componente para armar el .zip.", "bad"); }
+}
+async function restaurarCopia(file) {
+  try {
+    avisoCap("Leyendo la copia…"); await loadScript(JSZIP);
+    const zip = await JSZip.loadAsync(file), j = JSON.parse(await zip.file("capturas.json").async("string"));
+    const leer = async (ps) => { const out = []; for (const p of ps) { const z = zip.file(p); if (z) out.push(new Blob([await z.async("arraybuffer")], { type: "image/jpeg" })); } return out; };
+    let nf = 0, nc = 0;
+    for (const f of j.carpetas || []) { if (CARP.some(x => x.id === f.id)) continue; await dbPut("carpetas", { ...f, fotos: await leer(f.fotos) }); nf++; }
+    for (const c of j.capturas || []) { if (CAPT.some(x => x.id === c.id)) continue; await capPut({ ...c, fotos: await leer(c.fotos) }); nc++; }
+    await capCargar(); render();
+    avisoCap(nf || nc ? `Se recuperaron ${nf} ${nf === 1 ? "carpeta" : "carpetas"} y ${nc} ${nc === 1 ? "captura" : "capturas"}.` : "Todo lo de esa copia ya estaba en este celular.");
+  } catch (e) { avisoCap("Ese archivo no es una copia de jPique. Elige el .zip que descargaste desde esta pantalla.", "bad"); }
+}
+
+/* ---------- Render y eventos ---------- */
+function render() {
+  const v = { hoy: vHoy, mareas: vMareas, especies: vEspecies, capturas: vCapturas, normas: vNormas, fuentes: vFuentes }[st.tab];
+  const qEl = document.activeElement && document.activeElement.id === "q";
+  const aviso = avisoActualizacion();
+  $("#view").innerHTML = (aviso ? `<div style="margin-bottom:20px">${aviso}</div>` : "") + v();
+  const actual = st.tab === "fuentes" ? "normas" : st.tab;
+  $("#tabs").innerHTML = TABS.map(([k, l]) => `<button type="button" data-tab="${k}" ${actual === k ? 'aria-current="page"' : ""}>${svgI(ICON[k])}${l}</button>`).join("");
+  if (qEl) { const q = $("#q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+  if (st.tab === "capturas") mostrarUso();
+}
+function initSpots() {
+  const groups = [["Mar", SPOTS.filter(esMar)], ["Ríos, lagos y embalses", SPOTS.filter(s => !esMar(s))]];
+  $("#spot").innerHTML = groups.map(([g, l]) => `<optgroup label="${g}">${l.map(s => `<option value="${s.id}">${H(s.nombre)}</option>`).join("")}</optgroup>`).join("");
+  $("#spot").value = st.spot;
+}
+document.addEventListener("click", (ev) => {
+  const t = ev.target.closest("[data-tab],[data-go],[data-sp],[data-dia],[data-hora],[data-medio],[data-close],[data-car],[data-lic],[data-lic-save],[data-lic-del],[data-lic-del-ok],[data-lic-del-no],[data-cap-new],[data-cap],[data-cap-share],[data-cap-dl],[data-cap-del],[data-cap-del-ok],[data-cap-backup],[data-foto-quitar],[data-instalar],[data-carp-new],[data-carp],[data-carp-save],[data-carp-edit],[data-carp-del],[data-carp-del-todo],[data-carp-del-solo],[data-carp-share],[data-carp-dl],[data-foto],[data-foto-share],[data-foto-dl],[data-foto-del],[data-foto-del-ok],[data-actualizar],[data-buscar-act]"); if (!t) return;
+  const d = t.dataset;
+  if (d.instalar !== undefined) return instalar();
+  if (d.actualizar !== undefined) return actualizarApp();
+  if (d.buscarAct !== undefined) return buscarActualizacion(true);
+  if (d.capNew !== undefined) return abrirFormCaptura(d.capNew || null);
+  if (d.carpNew !== undefined) return abrirFormCarpeta();
+  if (d.carp) return verCarpeta(d.carp);
+  if (d.carpSave !== undefined) return guardarCarpeta(d.carpSave);
+  if (d.carpEdit) return abrirFormCarpeta(d.carpEdit);
+  if (d.carpShare) return compartirCarpeta(d.carpShare);
+  if (d.carpDl) return descargarCarpeta(d.carpDl);
+  if (d.carpDel) { const nc = capsDe(d.carpDel).length;
+    $("#carp-del-wrap").outerHTML = `<div class="callout bad small stack" style="gap:10px;width:100%"><span>¿Qué quieres borrar? Las fotos de la salida se borran de este celular y no se puede deshacer.</span>
+      <button type="button" class="back" data-carp-del-todo="${d.carpDel}" style="color:var(--bad)">Borrar carpeta${nc ? ` y sus ${nc} ${nc === 1 ? "captura" : "capturas"}` : ""}</button>
+      ${nc ? `<button type="button" class="back" data-carp-del-solo="${d.carpDel}">Borrar carpeta y dejar las capturas sin carpeta</button>` : ""}
+      <button type="button" class="back" data-carp="${d.carpDel}">Cancelar</button></div>`; return; }
+  if (d.carpDelTodo) return borrarCarpeta(d.carpDelTodo, true);
+  if (d.carpDelSolo) return borrarCarpeta(d.carpDelSolo, false);
+  if (d.foto) { const [fid, k] = d.foto.split("|"); return verFoto(fid, +k); }
+  if ((d.fotoShare !== undefined || d.fotoDl !== undefined) && VISOR) { const i = VISOR.actual(), x = VISOR.fs[i], nombre = archivoFoto(VISOR.f, x, i);
+    if (d.fotoDl !== undefined) { descargar(x.b, nombre); avisoCap(AVISO_DESCARGA); return; }
+    return compartirArchivos([new File([x.b], nombre, { type: "image/jpeg" })], { title: VISOR.f.nombre, text: x.tipo === "cap" ? textoCaptura(x.cap) : VISOR.f.nombre }); }
+  if (d.fotoDel !== undefined) { $("#foto-del-wrap").innerHTML = `<span class="callout bad small stack" style="gap:10px;display:flex"><span>¿Quitar esta foto de la carpeta? Se borra de este celular.</span><span style="display:flex;gap:8px"><button type="button" class="back" data-foto-del-ok style="color:var(--bad)">Sí, quitar</button><button type="button" class="back" data-carp="${VISOR.f.id}">Cancelar</button></span></span>`; return; }
+  if (d.fotoDelOk !== undefined && VISOR) { const x = VISOR.fs[VISOR.actual()], f = VISOR.f;
+    dbPut("carpetas", { ...f, fotos: f.fotos.filter((_, j) => j !== x.i) }).then(capCargar).then(() => verCarpeta(f.id, "Foto quitada.")); return; }
+  if (d.cap) return verCaptura(d.cap);
+  if (d.capShare) return compartirCaptura(d.capShare);
+  if (d.capDl) return descargarCaptura(d.capDl);
+  if (d.capBackup !== undefined) return copiaSeguridad();
+  if (d.fotoQuitar) { FORM_FOTOS.splice(+d.fotoQuitar, 1); return pintarPrev(); }
+  if (d.capDel) { $("#cap-del-wrap").innerHTML = `<div class="callout bad small stack" style="gap:10px"><span>¿Borrar esta captura y sus fotos de este celular? No se puede deshacer.</span><span style="display:flex;gap:8px"><button type="button" class="back" data-cap-del-ok="${d.capDel}" style="color:var(--bad)">Sí, borrar</button><button type="button" class="back" data-cap="${d.capDel}">Cancelar</button></span></div>`; return; }
+  if (d.capDelOk) { const carp = (CAPT.find(c => c.id === d.capDelOk) || {}).carpeta;
+    capDel(d.capDelOk).then(capCargar).then(() => { if (carp && CARP.some(f => f.id === carp)) verCarpeta(carp, "Captura borrada."); else { cerrarFicha(); render(); } }); return; }
+  if (t.dataset.close !== undefined) return cerrarFicha();
+  if (t.dataset.lic !== undefined) return abrirLicencia();
+  if (t.dataset.licSave !== undefined) { LIC.vence = $("#lic-vence").value || null; LIC.aguas = $("#lic-aguas").value; licGuardar().then(() => { abrirLicencia(); render(); }); return; }
+  if (t.dataset.licDel !== undefined) { $("#lic-del-wrap").innerHTML = `<div class="callout bad small stack" style="gap:10px"><span>¿Borrar la licencia de este teléfono? Tendrás que volver a subir el PDF.</span><span style="display:flex;gap:8px"><button type="button" class="back" data-lic-del-ok style="color:var(--bad)">Sí, borrar</button><button type="button" class="back" data-lic-del-no>Cancelar</button></span></div>`; return; }
+  if (t.dataset.licDelNo !== undefined) return abrirLicencia();
+  if (t.dataset.licDelOk !== undefined) { LIC = null; licGuardar().then(() => { abrirLicencia(); render(); }); return; }
+  if (t.dataset.car) { const tr = $("#car"); const n = tr.children.length, i = Math.round(tr.scrollLeft / tr.clientWidth);
+    const j = (i + +t.dataset.car + n) % n; tr.scrollTo({ left: j * tr.clientWidth, behavior: "smooth" }); return; }
+  if (t.dataset.sp) return ficha(t.dataset.sp);
+  if (t.dataset.tab || t.dataset.go) { cerrarFicha(); st.tab = t.dataset.tab || t.dataset.go; try { history.replaceState(null, "", "#" + st.tab); } catch (e) {} window.scrollTo(0, 0); }
+  if (t.dataset.dia) { st.dia = +t.dataset.dia; st.hora = null; }
+  if (t.dataset.hora) st.hora = t.dataset.hora === "ahora" ? null : +t.dataset.hora;
+  if (t.dataset.medio) { st.medio = t.dataset.medio; st.q = ""; }
+  render();
+});
+document.addEventListener("input", (ev) => { if (ev.target.id === "q") { st.q = ev.target.value; render(); } });
+document.addEventListener("change", (ev) => { if (ev.target.id === "cap-restore" && ev.target.files[0]) restaurarCopia(ev.target.files[0]); });
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && !$("#sheet").hidden) cerrarFicha(); });
+$("#spot").addEventListener("change", (ev) => {
+  st.spot = ev.target.value; save();
+  const sp = SPOTS.find(s => s.id === st.spot); st.medio = esMar(sp) ? "mar" : "dulce";
+  render(); cargarVivo(sp);
+});
+
+// Tema: sistema → claro → oscuro
+const THEMES = ["system", "light", "dark"];
+let theme = "system"; try { theme = localStorage.getItem("myv-theme") || "system"; } catch (e) {}
+function applyTheme() {
+  if (theme === "system") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", theme);
+  const ic = { system: '<circle cx="12" cy="12" r="8"/><path d="M12 4v16" /><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>', light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', dark: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>' }[theme];
+  const lbl = { system: "Tema: automático", light: "Tema: claro", dark: "Tema: oscuro" }[theme];
+  $("#theme").innerHTML = svgI(ic, 18); $("#theme").setAttribute("aria-label", lbl + ". Toca para cambiar"); $("#theme").title = lbl;
+}
+$("#theme").addEventListener("click", () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % 3]; try { localStorage.setItem("myv-theme", theme); } catch (e) {} applyTheme(); });
+
+const h0 = (location.hash || "").slice(1); if (TABS.some(t => t[0] === h0) || h0 === "fuentes") st.tab = h0;
+{ const sp = SPOTS.find(s => s.id === st.spot); st.medio = esMar(sp) ? "mar" : "dulce"; }
+{ const sp = SPOTS.find(s => s.id === st.spot); st.dia = idxHoy(datos(sp), nowCL()) ?? 0; }
+/* ---------- Actualizaciones: compara esta versión con version.json publicado en GitHub ---------- */
+const APP_VERSION = "__APP_VERSION__";
+const ACT = { estado: "", nueva: null }; // estado: "", "buscando", "nueva", "al-dia", "sin-conexion", "actualizando"
+async function buscarActualizacion(manual = false) {
+  if (ACT.estado === "buscando" || ACT.estado === "actualizando") return;
+  ACT.estado = "buscando"; if (manual) render();
+  try {
+    const v = await fetch(`version.json?t=${Date.now()}`, { cache: "no-store" }).then(r => { if (!r.ok) throw r.status; return r.json(); });
+    ACT.nueva = v.version !== APP_VERSION ? v : null; ACT.estado = ACT.nueva ? "nueva" : "al-dia";
+  } catch (e) { ACT.estado = manual ? "sin-conexion" : ""; }
+  if (manual || ACT.estado === "nueva") render();
+}
+async function actualizarApp() {
+  ACT.estado = "actualizando"; render();
+  try {
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if (reg) {
+      await reg.update(); // descarga el service worker nuevo, que guarda las fotos y archivos nuevos
+      const sw = reg.installing || reg.waiting;
+      if (sw) await new Promise(ok => { const fin = () => sw.state === "activated" && ok(); sw.addEventListener("statechange", fin); fin(); setTimeout(ok, 8000); });
+    }
+  } catch (e) {}
+  location.replace(location.pathname + "?v=" + (ACT.nueva ? ACT.nueva.version : Date.now()) + location.hash);
+}
+function avisoActualizacion() {
+  if (ACT.estado === "nueva") return `<div class="callout accent" style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span><strong>Hay una versión nueva de la app.</strong><br><span class="small muted">Se actualiza en segundos y no se borran tus capturas ni tu licencia.</span></span><button type="button" class="back" data-actualizar style="flex:none;background:var(--fg);color:var(--bg);border-color:var(--fg)">Actualizar</button></div>`;
+  if (ACT.estado === "actualizando") return `<div class="callout info">Actualizando la app…</div>`;
+  return "";
+}
+function versionHTML() {
+  const txt = { buscando: "Buscando…", "al-dia": "Tienes la última versión.", "sin-conexion": "No se pudo revisar: necesitas internet.", nueva: "Hay una versión nueva disponible.", actualizando: "Actualizando…" }[ACT.estado] || "";
+  return `<section class="card stack">
+    <div class="sec-head"><h3>Versión de la app</h3><span class="num small muted">${APP_VERSION}</span></div>
+    <p class="small muted">La app se actualiza desde su página en GitHub. Tus capturas, carpetas y licencia se mantienen al actualizar.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      ${ACT.estado === "nueva" ? `<button type="button" class="back" data-actualizar style="background:var(--fg);color:var(--bg);border-color:var(--fg)">Actualizar ahora</button>`
+        : `<button type="button" class="back" data-buscar-act ${ACT.estado === "buscando" ? "disabled" : ""}>${svgI('<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>', 18)}Buscar actualización</button>`}
+      <span class="small ${ACT.estado === "nueva" ? "" : "muted"}" role="status">${txt}</span>
+    </div>
+  </section>`;
+}
+
+// App instalable: modo sin conexión y botón "Instalar" (solo cuando se sirve por https o localhost)
+let PROMPT_INSTALAR = null;
+const INSTALADA = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+try { if ("serviceWorker" in navigator && /^https:|^http:\/\/localhost/.test(location.href)) navigator.serviceWorker.register("sw.js").catch(() => {}); } catch (e) {}
+addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); PROMPT_INSTALAR = e; if (st.tab === "normas") render(); });
+addEventListener("appinstalled", () => { PROMPT_INSTALAR = null; render(); });
+async function instalar() { if (!PROMPT_INSTALAR) return; PROMPT_INSTALAR.prompt(); await PROMPT_INSTALAR.userChoice; PROMPT_INSTALAR = null; render(); }
+
+// Revisa si hay versión nueva al abrir la app y cada vez que vuelve a primer plano (máximo cada 30 minutos)
+let ultimaRevision = 0;
+const revisar = () => { if (navigator.onLine !== false && Date.now() - ultimaRevision > 30 * 60e3) { ultimaRevision = Date.now(); buscarActualizacion(false); } };
+document.addEventListener("visibilitychange", () => { if (!document.hidden) revisar(); });
+initSpots(); applyTheme(); render(); licCargar(); capCargar(); anuncioCargar(); revisar(); cargarVivo(SPOTS.find(s => s.id === st.spot));
+</script>
