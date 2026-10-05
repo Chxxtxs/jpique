@@ -2,6 +2,17 @@
 *.docx
 *.pdf
 
+# Firma del APK: NUNCA subirla (está guardada como secreto en GitHub)
+firma-android/
+*.p12
+*.jks
+
+# Compilación de Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+
 # Configuración local de Claude
 .claude/
 

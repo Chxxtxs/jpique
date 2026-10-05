@@ -1,0 +1,47 @@
+// APK de jPique: abre https://chxxtxs.github.io/jpique/ a pantalla completa con Chrome (Trusted Web Activity).
+// Las actualizaciones de la app llegan desde la web; el APK solo cambia si cambia este proyecto.
+plugins {
+    id "com.android.application"
+}
+
+def clave = (System.getenv("FIRMA_CLAVE") ?: "").trim()
+
+android {
+    namespace "cl.jpique.app"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "cl.jpique.app"
+        minSdk 21
+        targetSdk 35
+        // Cada compilación en GitHub sube el número, así el APK nuevo se instala sobre el anterior
+        versionCode((System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger())
+        versionName "1.0." + (System.getenv("GITHUB_RUN_NUMBER") ?: "0")
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("firma.p12")
+            storeType "pkcs12"
+            storePassword clave
+            keyAlias "jpique"
+            keyPassword clave
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation "com.google.androidbrowserhelper:androidbrowserhelper:2.5.0"
+}

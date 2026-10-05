@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="appName">jPique</string>
+    <string name="launchUrl">https://chxxtxs.github.io/jpique/</string>
+    <!-- Vincula el APK con la web (debe coincidir con https://chxxtxs.github.io/.well-known/assetlinks.json) -->
+    <string name="assetStatements" translatable="false">
+        [{ \"relation\": [\"delegate_permission/common.handle_all_urls\"],
+           \"target\": { \"namespace\": \"web\", \"site\": \"https://chxxtxs.github.io\" } }]
+    </string>
+</resources>

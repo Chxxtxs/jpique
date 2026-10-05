@@ -1,0 +1,63 @@
+# Compila el APK de jPique en GitHub (gratis) y lo deja para descargar en:
+# https://github.com/Chxxtxs/jpique/releases/download/apk/jpique.apk
+# Solo hace falta volver a compilarlo si cambia la carpeta android/ (la app en sí se actualiza desde la web).
+name: Crear APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - ".github/workflows/apk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: Poner la firma (guardada como secreto del repositorio)
+        run: echo "$FIRMA_B64" | base64 -d > android/app/firma.p12
+        env:
+          FIRMA_B64: ${{ secrets.FIRMA_B64 }}
+
+      - name: Compilar el APK
+        working-directory: android
+        run: gradle assembleRelease --no-daemon --stacktrace
+        env:
+          FIRMA_CLAVE: ${{ secrets.FIRMA_CLAVE }}
+
+      - name: Revisar la firma
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk jpique.apk
+          "$ANDROID_HOME"/build-tools/$(ls "$ANDROID_HOME"/build-tools | sort -V | tail -1)/apksigner verify --print-certs jpique.apk | head -5
+
+      - name: Publicar el APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk
+          name: jPique para Android
+          make_latest: true
+          files: jpique.apk
+          body: |
+            **Descargar:** https://github.com/Chxxtxs/jpique/releases/download/apk/jpique.apk
+
+            Cómo instalar en Android:
+            1. Abre el enlace en el celular y descarga `jpique.apk`.
+            2. Ábrelo. Si Android pregunta, permite «Instalar apps desconocidas» para tu navegador o el administrador de archivos.
+            3. Listo: jPique queda en tu pantalla de inicio. Las novedades llegan solas con el botón «Actualizar» dentro de la app.
+
+            Necesita Chrome (u otro navegador moderno) instalado en el celular.

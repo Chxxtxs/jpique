@@ -1032,6 +1032,8 @@ function vNormas() {
       <p class="small">Queda con su ícono en la pantalla de inicio, se abre a pantalla completa y funciona sin señal en la playa.</p>
       ${PROMPT_INSTALAR ? `<button type="button" class="back" data-instalar style="align-self:stretch;justify-content:center;background:var(--fg);color:var(--bg);border-color:var(--fg);padding:12px">Instalar jPique</button>`
         : `<p class="small muted"><strong>Android (Chrome):</strong> menú ⋮ → <em>Agregar a la pantalla principal</em> o <em>Instalar app</em>.<br><strong>iPhone (Safari):</strong> botón Compartir → <em>Agregar a inicio</em>.</p>`}
+      ${/android/i.test(navigator.userAgent) ? `<a class="back" href="${APK_URL}" style="align-self:flex-start;text-decoration:none">${svgI('<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>', 18)}Descargar APK para Android</a>
+      <p class="small muted">Si prefieres instalar el archivo: descárgalo, ábrelo y permite «Instalar apps desconocidas» cuando Android lo pida.</p>` : ""}
     </section>`}
     <div class="stack">
       <details open><summary>Licencia de pesca</summary><div class="in">
@@ -1608,7 +1610,7 @@ const h0 = (location.hash || "").slice(1); if (TABS.some(t => t[0] === h0) || h0
 { const sp = SPOTS.find(s => s.id === st.spot); st.medio = esMar(sp) ? "mar" : "dulce"; }
 { const sp = SPOTS.find(s => s.id === st.spot); st.dia = idxHoy(datos(sp), nowCL()) ?? 0; }
 /* ---------- Actualizaciones: compara esta versión con version.json publicado en GitHub ---------- */
-const APP_VERSION = "c5e47ba";
+const APP_VERSION = "9d253e3";
 const ACT = { estado: "", nueva: null }; // estado: "", "buscando", "nueva", "al-dia", "sin-conexion", "actualizando"
 async function buscarActualizacion(manual = false) {
   if (ACT.estado === "buscando" || ACT.estado === "actualizando") return;
@@ -1651,7 +1653,11 @@ function versionHTML() {
 
 // App instalable: modo sin conexión y botón "Instalar" (solo cuando se sirve por https o localhost)
 let PROMPT_INSTALAR = null;
-const INSTALADA = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const APK_URL = "https://github.com/Chxxtxs/jpique/releases/download/apk/jpique.apk";
+// Instalada como app: desde la pantalla de inicio (PWA), en iPhone, o abierta desde el APK de Android
+const DESDE_APK = document.referrer.startsWith("android-app://cl.jpique.app");
+try { if (DESDE_APK) sessionStorage.setItem("apk", "1"); } catch (e) {}
+const INSTALADA = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true || DESDE_APK || (() => { try { return sessionStorage.getItem("apk") === "1"; } catch (e) { return false; } })();
 try { if ("serviceWorker" in navigator && /^https:|^http:\/\/localhost/.test(location.href)) navigator.serviceWorker.register("sw.js").catch(() => {}); } catch (e) {}
 addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); PROMPT_INSTALAR = e; if (st.tab === "normas") render(); });
 addEventListener("appinstalled", () => { PROMPT_INSTALAR = null; render(); });
