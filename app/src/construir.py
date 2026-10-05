@@ -62,17 +62,23 @@ def ms(iso):
     return int(datetime.fromisoformat(iso.replace("Z", "+00:00")).timestamp() * 1000)
 
 
-def get_ua(url, timeout=90, intentos=4):
+LIMITE_S = 420  # tope total para consultar servidores externos; lo que falte se completa con el pronóstico guardado
+INICIO = time.time()
+
+
+def get_ua(url, timeout=40, intentos=2):
     """Descarga JSON con reintentos: los servidores gratuitos a veces tardan o responden 503."""
     ultimo = None
     for i in range(intentos):
+        if time.time() - INICIO > LIMITE_S:
+            raise TimeoutError("se agotó el tiempo total de consultas")
         try:
             req = urllib.request.Request(url, headers=AGENTE)
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 return json.loads(r.read())
         except Exception as e:
             ultimo = e
-            time.sleep(2 + 3 * i)
+            time.sleep(1 + 2 * i)
     raise ultimo
 
 
@@ -143,17 +149,24 @@ def actualizar(snap):
         time.sleep(0.25)
     crudo.update(nuevas)
     nuevas_olas = {}
-    for c in {tuple(s["celda"]) for s in snap["spots"] if s.get("celda")}:
-        clave = f"{c[0]:g},{c[1]:g}"  # igual que celda.join(",") en la app
-        try:
-            sel = f"[({desde}):1:(last)][(0.0)][({c[0]})][({c[1]})]"
-            rows = get_ua(OLAS + urllib.parse.quote(f"Thgt{sel},Tper{sel}"))["table"]["rows"]
-            t = [ms(r[0]) for r in rows]
-            nuevas_olas[clave] = compacto(t[0], t, hs=[None if r[4] is None else round(r[4], 2) for r in rows], tp=[None if r[5] is None else round(r[5], 1) for r in rows])
-        except Exception as e:
-            fallos += 1
-            print("  sin olas nuevas para", clave, "->", e)
-        time.sleep(0.25)
+
+    def olas_de(c):
+        sel = f"[({desde}):1:(last)][(0.0)][({c[0]})][({c[1]})]"
+        rows = get_ua(OLAS + urllib.parse.quote(f"Thgt{sel},Tper{sel}"))["table"]["rows"]
+        t = [ms(r[0]) for r in rows]
+        return compacto(t[0], t, hs=[None if r[4] is None else round(r[4], 2) for r in rows], tp=[None if r[5] is None else round(r[5], 1) for r in rows])
+
+    from concurrent.futures import ThreadPoolExecutor
+    celdas_uso = sorted({tuple(s["celda"]) for s in snap["spots"] if s.get("celda")})
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        futuros = [(c, ex.submit(olas_de, c)) for c in celdas_uso]
+        for c, f in futuros:
+            clave = f"{c[0]:g},{c[1]:g}"  # igual que celda.join(",") en la app
+            try:
+                nuevas_olas[clave] = f.result()
+            except Exception as e:
+                fallos += 1
+                print("  sin olas nuevas para", clave, "->", e)
     olas.update(nuevas_olas)
     en_uso = {f"{s['celda'][0]:g},{s['celda'][1]:g}" for s in snap["spots"] if s.get("celda")}
     ids = {s["id"] for s in snap["spots"]}
