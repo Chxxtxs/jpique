@@ -75,7 +75,7 @@ body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 
 /* Tarjetas y chips */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
-.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .chip.ok { color: var(--ok); background: var(--ok-soft); }
 .chip.warn { color: var(--warn); background: var(--warn-soft); }
 .chip.bad { color: var(--bad); background: var(--bad-soft); }
@@ -208,7 +208,14 @@ details > .in { padding: 0 16px 16px; display: flex; flex-direction: column; gap
 .tag { display: inline-block; font-size: 12.5px; padding: 3px 10px; border-radius: 999px; background: var(--sea-soft); color: var(--sea); font-weight: 500; }
 details > summary { align-items: center; flex-wrap: wrap; }
 details > summary::after { margin-left: auto; }
-.chip { max-width: 100%; }
+/* Etiquetas: si el texto no cabe (tarjetas angostas, letra grande), baja de línea dentro de la etiqueta en vez de salirse */
+.chip { max-width: 100%; white-space: normal; line-height: 1.25; }
+.sp .b .chip { align-self: flex-start; }
+/* Visor web antiguo (Android System WebView sin actualizar): sin aspect-ratio las fotos quedarían con altura 0 */
+@supports not (aspect-ratio: 1 / 1) {
+  .car-track { height: calc((100vw - 32px) * 0.75); max-height: 366px; }
+  .ph-empty { min-height: 110px; }
+}
 .foot { font-size: 12px; color: var(--muted); padding-block: 24px 8px; }
 @keyframes confeti { to { transform: translateY(340px) rotate(540deg); opacity: 0; } }
 @media (prefers-reduced-motion: no-preference) {
@@ -2132,6 +2139,9 @@ async function buscarActualizacion(manual = false) {
 // App nativa: baja solo los archivos que cambiaron (según archivos.json), copia el resto de la versión actual,
 // los deja en una carpeta propia del teléfono y recarga desde ahí. Si la versión nueva no arranca bien,
 // al volver a abrir la app se usa la anterior (solo se fija cuando la nueva carga completa).
+const MOTOR = +((navigator.userAgent.match(/Chrome\/(\d+)/) || [])[1] || 0); // versión del visor web (Android System WebView)
+const MOTOR_VIEJO = NATIVO && MOTOR > 0 && MOTOR < 100;
+const PLAY_WEBVIEW = "https://play.google.com/store/apps/details?id=com.google.android.webview";
 const INFO_NATIVO = NATIVO && CAP.App ? CAP.App.getInfo().catch(() => ({})) : Promise.resolve({});
 async function actualizarNativo() {
   const lista = await fetch(`${REMOTO}archivos.json?t=${Date.now()}`, { cache: "no-store" }).then(r => { if (!r.ok) throw r.status; return r.json(); });
@@ -2184,6 +2194,7 @@ async function actualizarApp() {
 function avisoActualizacion() {
   if (ACT.estado === "nueva" && ACT.nueva.apk) return `<div class="callout accent" style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span><strong>Hay una versión nueva de la app.</strong><br><span class="small muted">Esta vez hay que instalar el APK nuevo encima del actual. No se borran tus capturas ni tu licencia.</span></span><button type="button" class="back" data-actualizar style="flex:none;background:var(--fg);color:var(--bg);border-color:var(--fg)">Bajar APK</button></div>`;
   if (ACT.estado === "nueva") return `<div class="callout accent" style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span><strong>Hay una versión nueva de la app.</strong><br><span class="small muted">Se actualiza en segundos y no se borran tus capturas ni tu licencia.</span></span><button type="button" class="back" data-actualizar style="flex:none;background:var(--fg);color:var(--bg);border-color:var(--fg)">Actualizar</button></div>`;
+  if (MOTOR_VIEJO && st.tab === "hoy") return `<div class="callout warn stack" style="gap:10px"><span><strong>Tu teléfono tiene desactualizado el «Android System WebView»</strong> (versión ${MOTOR}), el componente que dibuja la app. Por eso algunas fotos o cuadros pueden verse mal.</span><a class="back" href="${PLAY_WEBVIEW}" style="align-self:flex-start;text-decoration:none">Actualizarlo en Play Store</a></div>`;
   // APK antiguo (abría la página con Chrome): avisa que hay una app Android de verdad
   if (st.tab === "hoy" && !NATIVO && (DESDE_APK || (() => { try { return sessionStorage.getItem("apk") === "1"; } catch (e) { return false; } })())) return `<div class="callout accent stack" style="gap:10px"><span><strong>Nueva app jPique para Android.</strong> Más rápida, funciona completa sin señal y se actualiza sola.</span><span class="small">Antes de instalarla, haz una <strong>copia de seguridad</strong> en Capturas: la app nueva guarda los datos aparte y ahí la restauras.</span><a class="back" href="${APK_URL}" style="align-self:flex-start;text-decoration:none;background:var(--fg);color:var(--bg);border-color:var(--fg)">Bajar la app nueva</a></div>`;
   if (ACT.estado === "actualizando") return `<div class="callout info">Actualizando la app… <span class="num" id="act-prog"></span></div>`;
@@ -2193,7 +2204,7 @@ function avisoActualizacion() {
 function versionHTML() {
   const txt = { buscando: "Buscando…", "al-dia": "Tienes la última versión.", "sin-conexion": "No se pudo revisar: necesitas internet.", nueva: ACT.nueva && ACT.nueva.apk ? "Hay una versión nueva: instala el APK nuevo encima del actual." : "Hay una versión nueva disponible.", actualizando: "Actualizando…", error: "No se pudo actualizar. Revisa tu conexión." }[ACT.estado] || "";
   return `<section class="card stack">
-    <div class="sec-head"><h3>Versión de la app</h3><span class="num small muted">${APP_VERSION}${NATIVO ? " · app Android" : ""}</span></div>
+    <div class="sec-head"><h3>Versión de la app</h3><span class="num small muted">${APP_VERSION}${NATIVO ? ` · app Android · visor ${MOTOR || "?"}` : ""}</span></div>
     <p class="small muted">La app se actualiza desde su página en GitHub${NATIVO ? ": baja solo lo que cambió, sin reinstalar" : ""}. Tus capturas, carpetas y licencia se mantienen al actualizar.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       ${ACT.estado === "nueva" || ACT.estado === "error" ? `<button type="button" class="back" data-actualizar style="background:var(--fg);color:var(--bg);border-color:var(--fg)">${ACT.nueva && ACT.nueva.apk ? "Bajar APK" : "Actualizar ahora"}</button>`
