@@ -1,0 +1,14 @@
+{
+  "appId": "cl.jpique.app",
+  "appName": "jPique",
+  "webDir": "www",
+  "backgroundColor": "#0d1418",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css"
+    }
+  }
+}

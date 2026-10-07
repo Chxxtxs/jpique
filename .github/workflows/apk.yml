@@ -1,13 +1,17 @@
-# Compila el APK de jPique en GitHub (gratis) y lo deja para descargar en:
+# Compila el APK nativo de jPique (Capacitor) en GitHub (gratis) y lo deja para descargar en:
 # https://github.com/Chxxtxs/jpique/releases/download/apk/jpique.apk
-# Solo hace falta volver a compilarlo si cambia la carpeta android/ (la app en sí se actualiza desde la web).
+# Solo hace falta volver a compilarlo si cambia la carpeta movil/ (la app en sí se actualiza sola desde la web).
 name: Crear APK
 
 on:
   push:
     branches: [main]
     paths:
-      - "android/**"
+      - "movil/android/**"
+      - "movil/package.json"
+      - "movil/package-lock.json"
+      - "movil/capacitor.config.json"
+      - "movil/nivel-nativo.txt"
       - ".github/workflows/apk.yml"
   workflow_dispatch:
 
@@ -20,30 +24,49 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: movil/package-lock.json
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.10.2"
+      - name: Armar la app web que va dentro del APK
+        run: python app/src/construir.py --offline
+
+      - name: Pasar la app web y los plugins al proyecto Android
+        working-directory: movil
+        run: |
+          npm ci --no-audit --no-fund
+          node preparar-web.mjs
+          npx cap sync android
 
       - name: Poner la firma (guardada como secreto del repositorio)
-        run: echo "$FIRMA_B64" | base64 -d > android/app/firma.p12
+        run: echo "$FIRMA_B64" | base64 -d > movil/android/app/firma.p12
         env:
           FIRMA_B64: ${{ secrets.FIRMA_B64 }}
 
       - name: Compilar el APK
-        working-directory: android
-        run: gradle assembleRelease --no-daemon --stacktrace
+        working-directory: movil/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
         env:
           FIRMA_CLAVE: ${{ secrets.FIRMA_CLAVE }}
 
       - name: Revisar la firma
         run: |
-          cp android/app/build/outputs/apk/release/app-release.apk jpique.apk
+          cp movil/android/app/build/outputs/apk/release/app-release.apk jpique.apk
           "$ANDROID_HOME"/build-tools/$(ls "$ANDROID_HOME"/build-tools | sort -V | tail -1)/apksigner verify --print-certs jpique.apk | head -5
+          ls -la jpique.apk
 
       - name: Publicar el APK
         uses: softprops/action-gh-release@v2
@@ -60,4 +83,5 @@ jobs:
             2. Ábrelo. Si Android pregunta, permite «Instalar apps desconocidas» para tu navegador o el administrador de archivos.
             3. Listo: jPique queda en tu pantalla de inicio. Las novedades llegan solas con el botón «Actualizar» dentro de la app.
 
-            Necesita Chrome (u otro navegador moderno) instalado en el celular.
+            App nativa (Android 7 o superior): funciona completa sin señal y no necesita Chrome.
+            Si tenías la versión anterior del APK, haz antes una copia de seguridad en Capturas y restáurala en la app nueva.

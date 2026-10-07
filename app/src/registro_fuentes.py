@@ -45,16 +45,17 @@ Registro de dónde sale cada dato de la app. Revisado el 5 de octubre de 2026.
 
 | Componente | Uso | Licencia | Costo |
 |---|---|---|---|
-| [pdf.js](https://github.com/mozilla/pdf.js) 3.11.174 | Leer el PDF de la licencia | Apache 2.0 | $0 |
-| [JSZip](https://stuk.github.io/jszip/) 3.10.1 | Copias de seguridad y descargar carpetas | MIT | $0 |
-| Familjen Grotesk, IBM Plex Sans, IBM Plex Mono ([Google Fonts](https://fonts.google.com/)) | Tipografías | SIL Open Font License | $0 |
+| [pdf.js](https://github.com/mozilla/pdf.js) 3.11.174 | Leer el PDF de la licencia (incluido en `app/lib/`) | Apache 2.0 | $0 |
+| [JSZip](https://stuk.github.io/jszip/) 3.10.1 | Copias de seguridad y descargar carpetas (incluido en `app/lib/`) | MIT | $0 |
+| Familjen Grotesk, IBM Plex Sans, IBM Plex Mono ([Google Fonts](https://fonts.google.com/)) | Tipografías (incluidas en `app/lib/fuentes/`, con su licencia en `app/lib/OFL.txt`) | SIL Open Font License 1.1 | $0 |
+| [Capacitor](https://capacitorjs.com/) 8 y sus plugins App, Browser, Filesystem, Geolocation, Haptics y Share | App nativa para Android (`movil/`) | MIT | $0 |
 
 ## Publicación
 
 | Qué | Opción gratis |
 |---|---|
 | Alojar la app (https) | GitHub Pages, Cloudflare Pages o Netlify, plan gratis |
-| Instalar en el celular | Desde el navegador: Android (Chrome, «Instalar app») e iPhone (Safari, «Agregar a inicio»). Sin Google Play (USD 25) ni App Store (USD 99 al año). |
+| Instalar en el celular | Android: APK nativo compilado gratis en GitHub Actions y publicado en GitHub Releases. También desde el navegador: Android (Chrome, «Instalar app») e iPhone (Safari, «Agregar a inicio»). Sin Google Play (USD 25) ni App Store (USD 99 al año). |
 
 ## Fuentes que NO se usan
 
@@ -79,7 +80,7 @@ Las CC BY-SA obligan a que una versión editada (por ejemplo, con flechas) lleve
 
 1. Mantener visibles los créditos de MET Norway, NOAA/PacIOOS, UHSLC y de cada foto.
 2. Revisar la planilla de Sernapesca una vez al mes y actualizar la fecha de verificación.
-3. Antes de 2030, volver a correr `mareas_valparaiso.py` para extender la tabla de mareas.
+3. Antes de 2029, volver a correr `mareas_chile.py` para extender la tabla de mareas.
 4. El aviso (auspiciador) se configura en `app/anuncio.json`.
 """
 open(SALIDA, "w", encoding="utf-8").write(md)

@@ -7,11 +7,13 @@ firma-android/
 *.p12
 *.jks
 
-# Compilación de Android
-android/.gradle/
-android/build/
-android/app/build/
-android/local.properties
+# App Android (Capacitor): dependencias y copias que se generan solas
+movil/node_modules/
+movil/www/
+movil/android/.gradle/
+movil/android/build/
+movil/android/app/build/
+movil/android/local.properties
 
 # Configuración local de Claude
 .claude/

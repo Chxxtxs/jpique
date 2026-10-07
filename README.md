@@ -1,6 +1,6 @@
 # jPique
 
-App gratuita para pesca recreativa en todo Chile, de Arica a Magallanes: mareas, vedas, tallas, cuotas, actividad de peces, luna, bitácora de capturas con carpetas y licencia de pesca. Se instala en el celular desde el navegador y funciona sin señal.
+App gratuita para pesca recreativa en todo Chile, de Arica a Magallanes: mareas, vedas, tallas, cuotas, actividad de peces, luna, bitácora de capturas con carpetas y licencia de pesca. App nativa para Android (APK) y también instalable desde el navegador; funciona sin señal.
 
 ## Cómo se actualiza
 
@@ -12,6 +12,23 @@ App gratuita para pesca recreativa en todo Chile, de Arica a Magallanes: mareas,
 Además, todos los días a las 06:15 GitHub vuelve a armar la app con el pronóstico del día, para que funcione sin señal con datos frescos. Eso no muestra el aviso de versión nueva.
 
 > GitHub pausa las tareas diarias si el repositorio pasa 60 días sin cambios. Para reactivarlas: pestaña **Actions → Publicar app → Enable workflow**.
+
+## App para Android (APK nativo)
+
+La carpeta `movil/` convierte la app en una app nativa de Android con [Capacitor](https://capacitorjs.com/): los archivos van dentro del APK, funciona completa sin señal y no depende de Chrome.
+
+- **Descargar:** https://github.com/Chxxtxs/jpique/releases/download/apk/jpique.apk
+- **Se actualiza sola:** el botón «Actualizar» baja de GitHub Pages solo los archivos que cambiaron (según `archivos.json`) y recarga, sin reinstalar. Si la versión nueva falla al abrir, la app vuelve a la anterior.
+- **Cuándo hace falta un APK nuevo:** solo si cambias algo de `movil/` (permisos, plugins, íconos). Sube el número en `movil/nivel-nativo.txt`: la app pedirá instalar el APK nuevo en vez de actualizarse sola. GitHub lo compila (pestaña **Actions → Crear APK**) con la firma guardada como secreto.
+
+Probar el proyecto Android en el computador (necesita Node.js; para compilar, Android Studio):
+
+```
+python app/src/construir.py --offline
+cd movil
+npm install
+npm run sync
+```
 
 ## Cambiar la tienda recomendada
 

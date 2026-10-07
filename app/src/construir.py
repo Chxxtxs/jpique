@@ -189,6 +189,9 @@ def main():
     snap["regiones"] = REGIONES
     fotos = sorted("fotos/" + n for n in os.listdir(os.path.join(RAIZ, "fotos")))
     extras = sorted(n for n in os.listdir(RAIZ) if n.startswith("anuncio-"))  # logos de auspiciadores
+    # Librerías y tipografías locales (pdf.js, JSZip, Google Fonts): la app no depende de otros servidores
+    extras += sorted(os.path.relpath(os.path.join(d, n), RAIZ).replace(os.sep, "/")
+                     for d, _, ns in os.walk(os.path.join(RAIZ, "lib")) for n in ns)
     archivos = ["./", "index.html", "manifest.webmanifest", "anuncio.json", "mareas.json", "icono-192.png", "icono-512.png", "icono-apple.png"] + extras + fotos
     with open(PLANTILLA, encoding="utf-8") as f:
         plantilla = f.read()
@@ -221,9 +224,16 @@ def main():
     sw = sw_plantilla.replace("__VERSION__", version).replace("__ARCHIVOS__", json.dumps(archivos, ensure_ascii=False))
     with open(os.path.join(RAIZ, "sw.js"), "w", encoding="utf-8") as f:
         f.write(sw)
-    # version.json: el botón «Buscar actualización» de la app lo compara con su propia versión
+    # version.json: el botón «Buscar actualización» de la app lo compara con su propia versión.
+    # «nativo» es el nivel del APK que hace falta (movil/nivel-nativo.txt): si sube, la app pide instalar el APK nuevo.
+    nivel = os.path.join(RAIZ, "..", "movil", "nivel-nativo.txt")
+    nativo = int(open(nivel).read().strip()) if os.path.exists(nivel) else 0
     with open(os.path.join(RAIZ, "version.json"), "w", encoding="utf-8") as f:
-        json.dump({"version": version, "fecha": time.strftime("%Y-%m-%d"), "pronostico": snap["generado"]}, f)
+        json.dump({"version": version, "fecha": time.strftime("%Y-%m-%d"), "pronostico": snap["generado"], "nativo": nativo}, f)
+    # archivos.json: huella de cada archivo; la app Android baja solo los que cambiaron
+    huellas = {n: hashlib.sha1(open(os.path.join(RAIZ, n), "rb").read()).hexdigest()[:10] for n in archivos if n != "./"}
+    with open(os.path.join(RAIZ, "archivos.json"), "w", encoding="utf-8") as f:
+        json.dump({"version": version, "archivos": huellas}, f, separators=(",", ":"))
     # Versión sin cabecera para publicar como Artifact (el publicador agrega su propio esqueleto)
     with open(os.path.join(RAIZ, "publicar.html"), "w", encoding="utf-8") as f:
         f.write(html)

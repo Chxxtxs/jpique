@@ -13,9 +13,7 @@
 <link rel="apple-touch-icon" href="icono-apple.png">
 <title>jPique</title>
 <meta name="description" content="Mareas, vedas, tallas y cuotas para pesca recreativa en todo Chile.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="lib/fuentes.css">
 <style>
 /* Layout: una columna tipo teléfono (máx. 520px), barra de pestañas fija abajo; tarjetas solo donde hay un dato que decidir. */
 :root {
@@ -56,7 +54,7 @@
 * { box-sizing: border-box; }
 html, body { background: var(--bg); color: var(--fg); }
 body { font-family: var(--font-body); font-size: 15px; line-height: 1.5; margin: 0; -webkit-font-smoothing: antialiased; }
-.app { max-width: 520px; margin: 0 auto; padding-inline: 16px; padding-block: 0 calc(84px + env(safe-area-inset-bottom, 0px)); }
+.app { max-width: 520px; margin: 0 auto; padding-inline: 16px; padding-block: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) calc(84px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }
 h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
 h2 { font-size: 22px; font-weight: 700; }
 h3 { font-size: 16px; font-weight: 600; }
@@ -78,7 +76,9 @@ textarea.search, input.search, select.search { width: 100%; padding: 10px 14px; 
 .stack-lg { display: flex; flex-direction: column; gap: 28px; }
 
 /* Encabezado */
-.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 14px 10px; display: flex; align-items: center; gap: 10px; }
+.top { position: sticky; top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)); z-index: 5; background: var(--bg); padding-block: 14px 10px; display: flex; align-items: center; gap: 10px; }
+/* Franja bajo la barra de estado del celular (app nativa de pantalla completa): tapa lo que pasa por debajo al hacer scroll */
+body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)); background: var(--bg); z-index: 6; }
 .brand { font-family: var(--font-display); font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .brand svg { color: var(--accent); }
 .spot-btn { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 500; cursor: pointer; }
@@ -160,8 +160,8 @@ textarea.search, input.search, select.search { width: 100%; padding: 10px 14px; 
 .kv b { color: var(--fg); font-family: var(--font-data); font-weight: 500; }
 
 /* Ficha */
-.sheet { position: fixed; inset: 0; z-index: 20; background: var(--bg); overflow-y: auto; }
-.sheet-in { max-width: 520px; margin: 0 auto; padding-inline: 16px; padding-block: calc(12px + env(safe-area-inset-top, 0px)) calc(40px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 20px; }
+.sheet { position: fixed; inset: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) 0 0 0; z-index: 20; background: var(--bg); overflow-y: auto; }
+.sheet-in { max-width: 520px; margin: 0 auto; padding-inline: 16px; padding-block: 12px calc(40px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); display: flex; flex-direction: column; gap: 20px; }
 .sheet .ph { border-radius: var(--r); }
 .credit { font-size: 11.5px; color: var(--muted); margin-top: 6px; min-height: 1.5em; }
 .car { position: relative; }
@@ -203,7 +203,7 @@ details[open] > summary::after { content: "–"; }
 details > .in { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
 
 /* Pestañas */
-.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)); }
 .tabs-in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(6, 1fr); }
 .tabs button { border: 0; background: none; padding: 9px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 500; color: var(--muted); cursor: pointer; min-width: 0; }
 .tabs button[aria-current="page"] { color: var(--fg); }
@@ -242,6 +242,45 @@ details > summary { align-items: center; }
 <script>
 "use strict";
 const SNAP = JSON.parse(document.getElementById("snapshot").textContent);
+
+/* ---------- App nativa (APK con Capacitor): los mismos archivos, más acceso a archivos, compartir, GPS y botón Atrás ---------- */
+const NATIVO = !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+const CAP = NATIVO ? Capacitor.Plugins : {};
+const REMOTO = "https://chxxtxs.github.io/jpique/"; // de aquí la app nativa saca el aviso y las actualizaciones
+const urlRemota = (p) => NATIVO ? REMOTO + p : p;
+const aBase64 = (blob) => new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] || ""); r.onerror = () => ko(r.error); r.readAsDataURL(blob); });
+// Escribe un archivo por partes: el puente nativo pasa texto base64 y una copia de seguridad puede pesar decenas de MB
+async function nativoEscribir(blob, path, directory) {
+  const PARTE = 3 * 1024 * 1024; // múltiplo de 3: cada parte queda en base64 sin relleno
+  if (!blob.size) await CAP.Filesystem.writeFile({ path, directory, data: "", recursive: true });
+  for (let i = 0; i < blob.size; i += PARTE) {
+    const data = await aBase64(blob.slice(i, i + PARTE));
+    if (i === 0) await CAP.Filesystem.writeFile({ path, directory, data, recursive: true });
+    else await CAP.Filesystem.appendFile({ path, directory, data });
+  }
+  return (await CAP.Filesystem.getUri({ path, directory })).uri;
+}
+// Guardar en el teléfono: fotos en Pictures/jPique (aparecen en la galería), el resto en Download/jPique
+async function nativoGuardar(blob, nombre) {
+  const carpeta = /\.(jpe?g|png)$/i.test(nombre) ? "Pictures/jPique" : "Download/jPique";
+  await nativoEscribir(blob, `${carpeta}/${nombre}`, "EXTERNAL_STORAGE");
+  return carpeta;
+}
+// Compartir archivos con el menú de Android (WhatsApp, Drive, correo…)
+async function nativoCompartir(files, datos) {
+  const uris = [];
+  for (const f of files) uris.push(await nativoEscribir(f, `compartir/${f.name}`, "CACHE"));
+  await CAP.Share.share({ title: datos.title, text: datos.text, files: uris.length ? uris : undefined, dialogTitle: "Compartir" });
+}
+const vibrar = (patron) => { try { if (NATIVO && CAP.Haptics) CAP.Haptics.vibrate({ duration: patron.reduce((a, b) => a + b, 0) }); else if (navigator.vibrate) navigator.vibrate(patron); } catch (e) {} };
+if (NATIVO) {
+  // Enlaces externos: se abren en el navegador del teléfono, no dentro de la app
+  document.addEventListener("click", (ev) => {
+    const a = ev.target.closest("a[href]"); if (!a) return;
+    const u = a.href; if (!/^https?:/.test(u) || u.startsWith(location.origin)) return;
+    ev.preventDefault(); (CAP.Browser ? CAP.Browser.open({ url: u }) : Promise.reject()).catch(() => window.open(u, "_blank"));
+  }, true);
+}
 const VERIFICADO = "5 oct 2026";
 const PLANILLA = "https://www.sernapesca.cl/manuales_y_publicaciones/temporadas-de-pesca-recreativa-en-chile/";
 const RES443 = "Res. Ex. N.° 443, de 17-02-2025 (Subpesca)";
@@ -979,7 +1018,7 @@ function licCard(spot, hoy) {
 }
 
 function loadScript(src) { return new Promise((ok, ko) => { if (document.querySelector(`script[src="${src}"]`)) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => ko(new Error("No se pudo cargar " + src)); document.head.appendChild(s); }); }
-const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+const PDFJS = "lib/"; // pdf.js 3.11.174 (Apache 2.0)
 async function pdfLib() {
   await loadScript(PDFJS + "pdf.min.js");
   await loadScript(PDFJS + "pdf.worker.min.js"); // corre en el hilo principal: el PDF es de una página
@@ -1146,7 +1185,8 @@ const FUENTES = [
   { g: "Programas y tipografías", items: [
     { n: "pdf.js (Mozilla)", d: "Lee el PDF de tu licencia, dentro del celular.", l: "Apache 2.0", lu: "https://www.apache.org/licenses/LICENSE-2.0", u: "https://github.com/mozilla/pdf.js" },
     { n: "JSZip", d: "Arma las copias de seguridad y las carpetas descargables.", l: "MIT", lu: "https://github.com/Stuk/jszip/blob/main/LICENSE.markdown", u: "https://stuk.github.io/jszip/" },
-    { n: "Familjen Grotesk, IBM Plex Sans e IBM Plex Mono", d: "Tipografías de Google Fonts.", l: "SIL Open Font License", lu: "https://openfontlicense.org", u: "https://fonts.google.com" },
+    { n: "Familjen Grotesk, IBM Plex Sans e IBM Plex Mono", d: "Tipografías de Google Fonts, incluidas en la app.", l: "SIL Open Font License", lu: "https://openfontlicense.org", u: "https://fonts.google.com" },
+    { n: "Capacitor (Ionic)", d: "Convierte la app en una app nativa de Android.", l: "MIT", lu: "https://github.com/ionic-team/capacitor/blob/main/LICENSE", u: "https://capacitorjs.com" },
   ]},
 ];
 function vFuentes() {
@@ -1161,14 +1201,20 @@ function vFuentes() {
 
 /* ---------- Aviso del auspiciador (se configura en anuncio.json, sin tocar el código) ---------- */
 let ANUNCIO = null;
-async function anuncioCargar() { try { ANUNCIO = await fetch("anuncio.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null); } catch (e) { ANUNCIO = null; } if (ANUNCIO && st.tab === "hoy") render(); }
+let ANUNCIO_BASE = "";
+async function anuncioCargar() {
+  const leer = (base) => fetch(base + "anuncio.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null);
+  try { ANUNCIO = NATIVO ? await leer(REMOTO) : await leer(""); if (NATIVO) ANUNCIO_BASE = REMOTO; } catch (e) { ANUNCIO = null; }
+  if (!ANUNCIO && NATIVO) { try { ANUNCIO = await leer(""); ANUNCIO_BASE = ""; } catch (e) { ANUNCIO = null; } }
+  if (ANUNCIO && st.tab === "hoy") render();
+}
 const urlSegura = (u) => /^https:\/\//.test(u || "") ? u : null;
 function anuncioHTML() {
   const a = ANUNCIO;
   if (a && a.activo && a.titulo) {
     const url = urlSegura(a.enlace);
     return `<aside class="card" style="display:flex;gap:12px;align-items:center;padding:12px 14px" aria-label="Aviso">
-      ${a.imagen ? `<img src="${H(a.imagen)}" alt="Logo de ${H(a.titulo)}" style="width:84px;height:70px;object-fit:contain;flex:none">` : ""}
+      ${a.imagen ? `<img src="${H(/^https:/.test(a.imagen) ? a.imagen : ANUNCIO_BASE + a.imagen)}" alt="Logo de ${H(a.titulo)}" style="width:84px;height:70px;object-fit:contain;flex:none">` : ""}
       <span class="txt" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;align-items:flex-start"><span class="label" style="font-size:10.5px">${H(a.etiqueta || "Auspicia")}</span><strong>${H(a.titulo)}</strong>${a.texto ? `<span class="small muted">${H(a.texto)}</span>` : ""}
       ${url ? `<a class="back" href="${H(url)}" target="_blank" rel="noopener sponsored" style="text-decoration:none;font-size:14px;margin-top:8px;padding:6px 14px">${H(a.boton || "Ver")}</a>` : ""}</span>
     </aside>`;
@@ -1512,18 +1558,24 @@ function verCaptura(id, aviso = "") {
 /* --- Compartir, descargar y copia de seguridad --- */
 const nombreArchivo = (c, i) => `${slug(nombreEsp(c))}_${c.fecha.replace(/[:T]/g, "-")}${i != null ? "_" + (i + 1) : ""}.jpg`;
 function descargar(blob, nombre) {
+  if (NATIVO) {
+    nativoGuardar(blob, nombre).then((c) => avisoCap(`Guardado en la carpeta ${c} del teléfono${c.startsWith("Pictures") ? " (aparece en la galería)" : " (ábrela con la app Archivos)"}.`, "ok"))
+      .catch(() => nativoCompartir([new File([blob], nombre)], { title: nombre }).catch(() => avisoCap("No se pudo guardar el archivo. Revisa el espacio libre o el permiso de almacenamiento.", "bad")));
+    return;
+  }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
 }
 const avisoCap = (t, k = "info") => { const m = $("#cap-msg"); if (m) { m.className = "callout small " + k; m.textContent = t; m.hidden = false; } };
-const AVISO_DESCARGA = "Revisa la carpeta Descargas de tu celular. Si no aparece nada, abre la app instalada en el teléfono: algunas vistas previas bloquean las descargas.";
+const AVISO_DESCARGA = NATIVO ? "Guardando en el teléfono…" : "Revisa la carpeta Descargas de tu celular. Si no aparece nada, abre la app instalada en el teléfono: algunas vistas previas bloquean las descargas.";
 const textoCaptura = (c) => [nombreEsp(c), c.largo ? `${c.largo} cm` : "", c.lugar, fechaTxt(c.fecha).split(" · ")[0]].filter(Boolean).join(" · ");
 async function compartirArchivos(files, datos) {
   try {
+    if (NATIVO) { avisoCap("Abriendo el menú de compartir…"); await nativoCompartir(files, datos); $("#cap-msg") && ($("#cap-msg").hidden = true); return; }
     if (files.length && navigator.canShare && navigator.canShare({ files })) { await navigator.share({ ...datos, files }); return; }
     if (navigator.share) { await navigator.share(datos); return; }
     avisoCap("Este navegador no permite compartir directo. Descarga las fotos y compártelas desde tu galería.", "warn");
-  } catch (e) { if (e.name !== "AbortError") avisoCap("No se pudo abrir el menú de compartir. Descarga las fotos y compártelas desde tu galería.", "warn"); }
+  } catch (e) { if (e.name !== "AbortError" && !/cancel/i.test(e.message || "")) avisoCap("No se pudo abrir el menú de compartir. Descarga las fotos y compártelas desde tu galería.", "warn"); }
 }
 function compartirCaptura(id) {
   const c = CAPT.find(x => x.id === id);
@@ -1538,7 +1590,7 @@ function compartirCarpeta(id) {
   const f = CARP.find(x => x.id === id), fs = fotosDe(f);
   compartirArchivos(fs.map((x, i) => new File([x.b], archivoFoto(f, x, i), { type: "image/jpeg" })), { title: f.nombre, text: [f.nombre, fechaCorta(f.fecha), f.lugar].filter(Boolean).join(" · ") });
 }
-const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+const JSZIP = "lib/jszip.min.js"; // JSZip 3.10.1 (MIT)
 async function descargarCarpeta(id) {
   const f = CARP.find(x => x.id === id), fs = fotosDe(f);
   try {
@@ -1549,7 +1601,7 @@ async function descargarCarpeta(id) {
     dir.file("resumen.txt", [f.nombre, [fechaCorta(f.fecha), f.lugar].filter(Boolean).join(" · "), f.notas, "", ...(caps.length ? ["Capturas:", ...caps.map(c => "- " + textoCaptura(c) + (c.devuelto ? " (devuelto)" : "") + (c.notas ? ". " + c.notas : ""))] : [])].filter(s => s !== undefined).join("\n"));
     const blob = await zip.generateAsync({ type: "blob" });
     descargar(blob, `${slug(f.nombre)}.zip`); avisoCap(`Carpeta lista (${kb(blob.size)}). ${AVISO_DESCARGA}`);
-  } catch (e) { avisoCap("No se pudo armar el .zip. Revisa tu conexión: la primera vez se descarga un componente para crearlo.", "bad"); }
+  } catch (e) { avisoCap("No se pudo armar el .zip. Puede que falte espacio en el celular.", "bad"); }
 }
 async function armarCopia() {
   await loadScript(JSZIP);
@@ -1641,7 +1693,7 @@ function girarRuleta() {
     const b = $("#rul-btn"), r = $("#rul-res"); if (!b || !r) return;
     b.disabled = false; b.textContent = "Girar otra vez"; actualizarRuletaCont();
     r.innerHTML = permisoSupremo();
-    try { navigator.vibrate && navigator.vibrate([80, 60, 160, 60, 240]); } catch (e) {}
+    vibrar([80, 60, 160, 60, 240]);
     r.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   }, ms + 80);
 }
@@ -1668,13 +1720,14 @@ function permisoSupremo() {
       <strong>${peces === 1 ? "pez" : "peces"} para la mesa</strong>
       <span class="small muted" style="margin-top:6px">El número sale al azar entre 1 y ${C.max}, según lo de hoy en ${H(C.spot.nombre)}: actividad de peces <b>${H(C.A.nivel.txt.toLowerCase())}</b>, mar <b>${H(C.em.txt.toLowerCase())}</b>${C.cf && C.cf.c >= 90 ? ", mareas vivas" : ""} (a las ${C.hora}).</span>
     </div>
-    ${navigator.share ? `<button type="button" class="back" data-permiso-share style="align-self:stretch;justify-content:center;padding:12px">${svgI(ICO.compartir, 18)}Mostrar el permiso a quien corresponda</button>` : ""}
+    ${navigator.share || NATIVO ? `<button type="button" class="back" data-permiso-share style="align-self:stretch;justify-content:center;padding:12px">${svgI(ICO.compartir, 18)}Mostrar el permiso a quien corresponda</button>` : ""}
     ${seguro ? "" : `<div class="callout bad small"><strong>Ojo con el mar.</strong> El permiso es supremo, pero el mar de hoy no. Pesca solo desde un lugar seguro y alejado de las olas.</div>`}
     <p class="small muted">Es un juego: la cantidad no es una obligación. Respeta siempre la talla mínima, la cuota por jornada y las vedas, y devuelve vivo lo que no corresponda llevarse (${esMar(C.spot) ? "en el mar el total no puede pasar de 10 ejemplares" : "revisa la cuota de cada especie"}). Y la licencia de pesca sigue siendo obligatoria.</p>
   </div>`;
 }
 async function compartirPermiso() {
-  try { await navigator.share({ title: "Permiso Supremo de Pesca", text: "PERMISO SUPREMO DE PESCA: tienes permiso sobre todos para ir a pescar. Vamos, tú puedes. (jPique)" }); } catch (e) {}
+  const datos = { title: "Permiso Supremo de Pesca", text: "PERMISO SUPREMO DE PESCA: tienes permiso sobre todos para ir a pescar. Vamos, tú puedes. (jPique)" };
+  try { if (NATIVO) await CAP.Share.share(datos); else await navigator.share(datos); } catch (e) {}
 }
 
 /* ---------- Tips de pesca: qué usar según marea, luz, agua y especie ---------- */
@@ -1978,9 +2031,10 @@ function pintarLugares() {
 }
 function cercaDeMi() {
   const msg = $("#lug-msg"), say = (t, k = "info") => { msg.className = "callout small " + k; msg.innerHTML = t; msg.hidden = false; };
-  if (!navigator.geolocation) return say("Este navegador no permite ubicarte. Elige el lugar en la lista.", "warn");
+  if (!NATIVO && !navigator.geolocation) return say("Este navegador no permite ubicarte. Elige el lugar en la lista.", "warn");
   say("Buscando tu ubicación…");
-  navigator.geolocation.getCurrentPosition((pos) => {
+  const ubicar = (ok, ko, op) => NATIVO ? CAP.Geolocation.getCurrentPosition({ enableHighAccuracy: false, ...op }).then(ok, ko) : navigator.geolocation.getCurrentPosition(ok, ko, op);
+  ubicar((pos) => {
     const { latitude: la, longitude: lo } = pos.coords;
     const c = SPOTS.map(s => ({ s, d: distKm(la, lo, s.lat, s.lon) })).filter(x => LUG.medio === "todos" || (LUG.medio === "mar") === esMar(x.s)).sort((a, b) => a.d - b.d)[0];
     if (!c) return say("No encontramos lugares con ese filtro.", "warn");
@@ -2057,25 +2111,69 @@ function applyTheme() {
   const ic = { system: '<circle cx="12" cy="12" r="8"/><path d="M12 4v16" /><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>', light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', dark: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>' }[theme];
   const lbl = { system: "Tema: automático", light: "Tema: claro", dark: "Tema: oscuro" }[theme];
   $("#theme").innerHTML = svgI(ic, 18); $("#theme").setAttribute("aria-label", lbl + ". Toca para cambiar"); $("#theme").title = lbl;
+  if (NATIVO && CAP.SystemBars) { const oscuro = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches); CAP.SystemBars.setStyle({ style: oscuro ? "DARK" : "LIGHT" }).catch(() => {}); }
 }
+try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => theme === "system" && applyTheme()); } catch (e) {}
 $("#theme").addEventListener("click", () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % 3]; try { localStorage.setItem("myv-theme", theme); } catch (e) {} applyTheme(); });
 
 const h0 = (location.hash || "").slice(1); if (TABS.some(t => t[0] === h0) || h0 === "fuentes") st.tab = h0;
 { const sp = SPOTS.find(s => s.id === st.spot); ctx(sp); st.medio = esMar(sp) ? "mar" : "dulce"; st.dia = idxHoy(datos(sp), nowCL()) ?? 0; }
 /* ---------- Actualizaciones: compara esta versión con version.json publicado en GitHub ---------- */
-const APP_VERSION = "b33ecea";
+const APP_VERSION = "49e3d30";
 const ACT = { estado: "", nueva: null }; // estado: "", "buscando", "nueva", "al-dia", "sin-conexion", "actualizando"
 async function buscarActualizacion(manual = false) {
   if (ACT.estado === "buscando" || ACT.estado === "actualizando") return;
   ACT.estado = "buscando"; if (manual) render();
   try {
-    const v = await fetch(`version.json?t=${Date.now()}`, { cache: "no-store" }).then(r => { if (!r.ok) throw r.status; return r.json(); });
+    const v = await fetch(`${urlRemota("version.json")}?t=${Date.now()}`, { cache: "no-store" }).then(r => { if (!r.ok) throw r.status; return r.json(); });
     ACT.nueva = v.version !== APP_VERSION ? v : null; ACT.estado = ACT.nueva ? "nueva" : "al-dia";
+    // Si la versión nueva usa algo que este APK no trae (un permiso, un plugin), hay que instalar el APK nuevo
+    if (ACT.nueva && NATIVO) ACT.nueva.apk = (v.nativo || 0) > (parseInt((await INFO_NATIVO).version, 10) || 0);
   } catch (e) { ACT.estado = manual ? "sin-conexion" : ""; }
   if (manual || ACT.estado === "nueva") render();
 }
+// App nativa: baja solo los archivos que cambiaron (según archivos.json), copia el resto de la versión actual,
+// los deja en una carpeta propia del teléfono y recarga desde ahí. Si la versión nueva no arranca bien,
+// al volver a abrir la app se usa la anterior (solo se fija cuando la nueva carga completa).
+const INFO_NATIVO = NATIVO && CAP.App ? CAP.App.getInfo().catch(() => ({})) : Promise.resolve({});
+async function actualizarNativo() {
+  const lista = await fetch(`${REMOTO}archivos.json?t=${Date.now()}`, { cache: "no-store" }).then(r => { if (!r.ok) throw r.status; return r.json(); });
+  let local = {}; try { local = (await fetch("archivos.json", { cache: "no-store" }).then(r => r.json())).archivos || {}; } catch (e) {}
+  const dir = `bundles/${lista.version}-${Date.now().toString(36)}`, nombres = Object.keys(lista.archivos);
+  let hechos = 0, nuevos = 0;
+  const uno = async (n) => {
+    const cambia = local[n] !== lista.archivos[n]; if (cambia) nuevos++;
+    const r = await fetch(cambia ? `${REMOTO}${encodeURI(n)}?v=${lista.archivos[n]}` : encodeURI(n), { cache: cambia ? "no-store" : "default" });
+    if (!r.ok) throw new Error("No se pudo bajar " + n);
+    await nativoEscribir(await r.blob(), `${dir}/${n}`, "DATA");
+    hechos++; const el = $("#act-prog"); if (el) el.textContent = `${Math.round(hechos * 100 / nombres.length)} %`;
+  };
+  try {
+    const cola = [...nombres]; await Promise.all([1, 2, 3, 4].map(async () => { while (cola.length) await uno(cola.shift()); }));
+    await nativoEscribir(new Blob([JSON.stringify(lista)], { type: "application/json" }), `${dir}/archivos.json`, "DATA");
+  } catch (e) { CAP.Filesystem.rmdir({ path: dir, directory: "DATA", recursive: true }).catch(() => {}); throw e; }
+  const { uri } = await CAP.Filesystem.getUri({ path: dir, directory: "DATA" });
+  try { localStorage.setItem("jpq-persistir", "1"); } catch (e) {}
+  await CAP.WebView.setServerBasePath({ path: decodeURIComponent(uri.replace(/^file:\/\//, "")) }); // recarga la app desde la carpeta nueva
+}
+// Al abrir: si la versión nueva cargó bien, queda fija y se borran las anteriores
+async function fijarVersionNativa() {
+  let pend = null; try { pend = localStorage.getItem("jpq-persistir"); localStorage.removeItem("jpq-persistir"); } catch (e) {}
+  if (!pend) return;
+  try {
+    await CAP.WebView.persistServerBasePath();
+    const { path } = await CAP.WebView.getServerBasePath();
+    const { files } = await CAP.Filesystem.readdir({ path: "bundles", directory: "DATA" });
+    for (const f of files) { const n = f.name || f; if (!String(path).endsWith("/" + n)) await CAP.Filesystem.rmdir({ path: "bundles/" + n, directory: "DATA", recursive: true }).catch(() => {}); }
+  } catch (e) {}
+}
 async function actualizarApp() {
+  if (NATIVO && ACT.nueva && ACT.nueva.apk) { CAP.Browser.open({ url: APK_URL }).catch(() => {}); return; }
   ACT.estado = "actualizando"; render();
+  if (NATIVO) {
+    try { await actualizarNativo(); return; }
+    catch (e) { ACT.estado = "error"; render(); return; }
+  }
   try {
     const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
     if (reg) {
@@ -2087,17 +2185,21 @@ async function actualizarApp() {
   location.replace(location.pathname + "?v=" + (ACT.nueva ? ACT.nueva.version : Date.now()) + location.hash);
 }
 function avisoActualizacion() {
+  if (ACT.estado === "nueva" && ACT.nueva.apk) return `<div class="callout accent" style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span><strong>Hay una versión nueva de la app.</strong><br><span class="small muted">Esta vez hay que instalar el APK nuevo encima del actual. No se borran tus capturas ni tu licencia.</span></span><button type="button" class="back" data-actualizar style="flex:none;background:var(--fg);color:var(--bg);border-color:var(--fg)">Bajar APK</button></div>`;
   if (ACT.estado === "nueva") return `<div class="callout accent" style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span><strong>Hay una versión nueva de la app.</strong><br><span class="small muted">Se actualiza en segundos y no se borran tus capturas ni tu licencia.</span></span><button type="button" class="back" data-actualizar style="flex:none;background:var(--fg);color:var(--bg);border-color:var(--fg)">Actualizar</button></div>`;
-  if (ACT.estado === "actualizando") return `<div class="callout info">Actualizando la app…</div>`;
+  // APK antiguo (abría la página con Chrome): avisa que hay una app Android de verdad
+  if (st.tab === "hoy" && !NATIVO && (DESDE_APK || (() => { try { return sessionStorage.getItem("apk") === "1"; } catch (e) { return false; } })())) return `<div class="callout accent stack" style="gap:10px"><span><strong>Nueva app jPique para Android.</strong> Más rápida, funciona completa sin señal y se actualiza sola.</span><span class="small">Antes de instalarla, haz una <strong>copia de seguridad</strong> en Capturas: la app nueva guarda los datos aparte y ahí la restauras.</span><a class="back" href="${APK_URL}" style="align-self:flex-start;text-decoration:none;background:var(--fg);color:var(--bg);border-color:var(--fg)">Bajar la app nueva</a></div>`;
+  if (ACT.estado === "actualizando") return `<div class="callout info">Actualizando la app… <span class="num" id="act-prog"></span></div>`;
+  if (ACT.estado === "error") return `<div class="callout warn" style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span>No se pudo actualizar. Revisa tu conexión e inténtalo de nuevo.</span><button type="button" class="back" data-actualizar style="flex:none">Reintentar</button></div>`;
   return "";
 }
 function versionHTML() {
-  const txt = { buscando: "Buscando…", "al-dia": "Tienes la última versión.", "sin-conexion": "No se pudo revisar: necesitas internet.", nueva: "Hay una versión nueva disponible.", actualizando: "Actualizando…" }[ACT.estado] || "";
+  const txt = { buscando: "Buscando…", "al-dia": "Tienes la última versión.", "sin-conexion": "No se pudo revisar: necesitas internet.", nueva: ACT.nueva && ACT.nueva.apk ? "Hay una versión nueva: instala el APK nuevo encima del actual." : "Hay una versión nueva disponible.", actualizando: "Actualizando…", error: "No se pudo actualizar. Revisa tu conexión." }[ACT.estado] || "";
   return `<section class="card stack">
-    <div class="sec-head"><h3>Versión de la app</h3><span class="num small muted">${APP_VERSION}</span></div>
-    <p class="small muted">La app se actualiza desde su página en GitHub. Tus capturas, carpetas y licencia se mantienen al actualizar.</p>
+    <div class="sec-head"><h3>Versión de la app</h3><span class="num small muted">${APP_VERSION}${NATIVO ? " · app Android" : ""}</span></div>
+    <p class="small muted">La app se actualiza desde su página en GitHub${NATIVO ? ": baja solo lo que cambió, sin reinstalar" : ""}. Tus capturas, carpetas y licencia se mantienen al actualizar.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      ${ACT.estado === "nueva" ? `<button type="button" class="back" data-actualizar style="background:var(--fg);color:var(--bg);border-color:var(--fg)">Actualizar ahora</button>`
+      ${ACT.estado === "nueva" || ACT.estado === "error" ? `<button type="button" class="back" data-actualizar style="background:var(--fg);color:var(--bg);border-color:var(--fg)">${ACT.nueva && ACT.nueva.apk ? "Bajar APK" : "Actualizar ahora"}</button>`
         : `<button type="button" class="back" data-buscar-act ${ACT.estado === "buscando" ? "disabled" : ""}>${svgI('<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>', 18)}Buscar actualización</button>`}
       <span class="small ${ACT.estado === "nueva" ? "" : "muted"}" role="status">${txt}</span>
     </div>
@@ -2110,8 +2212,9 @@ const APK_URL = "https://github.com/Chxxtxs/jpique/releases/download/apk/jpique.
 // Instalada como app: desde la pantalla de inicio (PWA), en iPhone, o abierta desde el APK de Android
 const DESDE_APK = document.referrer.startsWith("android-app://cl.jpique.app");
 try { if (DESDE_APK) sessionStorage.setItem("apk", "1"); } catch (e) {}
-const INSTALADA = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true || DESDE_APK || (() => { try { return sessionStorage.getItem("apk") === "1"; } catch (e) { return false; } })();
-try { if ("serviceWorker" in navigator && /^https:|^http:\/\/localhost/.test(location.href)) navigator.serviceWorker.register("sw.js").catch(() => {}); } catch (e) {}
+const INSTALADA = () => NATIVO || matchMedia("(display-mode: standalone)").matches || navigator.standalone === true || DESDE_APK || (() => { try { return sessionStorage.getItem("apk") === "1"; } catch (e) { return false; } })();
+// La app nativa ya trae sus archivos: el service worker solo hace falta en el navegador
+try { if (!NATIVO && "serviceWorker" in navigator && /^https:|^http:\/\/localhost/.test(location.href)) navigator.serviceWorker.register("sw.js").catch(() => {}); } catch (e) {}
 addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); PROMPT_INSTALAR = e; if (st.tab === "normas") render(); });
 addEventListener("appinstalled", () => { PROMPT_INSTALAR = null; render(); });
 async function instalar() { if (!PROMPT_INSTALAR) return; PROMPT_INSTALAR.prompt(); await PROMPT_INSTALAR.userChoice; PROMPT_INSTALAR = null; render(); }
@@ -2120,7 +2223,13 @@ async function instalar() { if (!PROMPT_INSTALAR) return; PROMPT_INSTALAR.prompt
 let ultimaRevision = 0;
 const revisar = () => { if (navigator.onLine !== false && Date.now() - ultimaRevision > 30 * 60e3) { ultimaRevision = Date.now(); buscarActualizacion(false); } };
 document.addEventListener("visibilitychange", () => { if (!document.hidden) revisar(); });
+if (NATIVO && CAP.App) CAP.App.addListener("backButton", () => {
+  if (!$("#sheet").hidden) { cerrarFicha(); render(); return; }
+  if (st.tab !== "hoy") { st.tab = "hoy"; try { history.replaceState(null, "", "#hoy"); } catch (e) {} window.scrollTo(0, 0); render(); return; }
+  CAP.App.minimizeApp().catch(() => CAP.App.exitApp());
+});
 actualizarEncabezado(); applyTheme(); render(); licCargar(); capCargar(); anuncioCargar(); revisar(); cargarVivo(SPOTS.find(s => s.id === st.spot));
+if (NATIVO) fijarVersionNativa();
 </script>
 
 </html>

@@ -1,0 +1,23 @@
+{
+  "name": "jpique-movil",
+  "private": true,
+  "version": "1.0.0",
+  "description": "jPique como app nativa de Android (Capacitor). Los archivos web salen de ../app.",
+  "scripts": {
+    "web": "node preparar-web.mjs",
+    "sync": "node preparar-web.mjs && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/browser": "^8.0.5",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/filesystem": "^8.1.4",
+    "@capacitor/geolocation": "^8.2.3",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/share": "^8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
+  }
+}
